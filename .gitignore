@@ -29,4 +29,4 @@ Thumbs.db
 *.log
 
 # OpenClaw internal
-.openclaw/
+.openclaw/node_modules/

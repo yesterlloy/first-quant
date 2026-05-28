@@ -1,0 +1,22 @@
+services:
+  quant-app:
+    build: .
+    volumes:
+      - ./data/db:/app/data/db
+      - ./data/cache:/app/data/cache
+      - ./config:/app/config
+    ports:
+      - "8050:8050"
+    environment:
+      - TZ=Asia/Shanghai
+    command: python scripts/run_dashboard.py
+
+  collector:
+    build: .
+    volumes:
+      - ./data/db:/app/data/db
+      - ./data/cache:/app/data/cache
+      - ./config:/app/config
+    environment:
+      - TZ=Asia/Shanghai
+    command: python scripts/run_collector.py
