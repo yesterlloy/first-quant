@@ -80,6 +80,54 @@ class DuckDBManager:
             )
         """)
 
+        # Phase 2 新增表
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS financial_ext (
+                code VARCHAR,
+                date DATE,
+                pe DOUBLE,
+                pb DOUBLE,
+                roe DOUBLE,
+                roa DOUBLE,
+                revenue DOUBLE,
+                net_profit DOUBLE,
+                total_assets DOUBLE,
+                total_liability DOUBLE,
+                debt_ratio DOUBLE,
+                ocf DOUBLE,
+                PRIMARY KEY (code, date)
+            )
+        """)
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS dividend (
+                code VARCHAR,
+                year VARCHAR,
+                dividend_per_share DOUBLE,
+                ex_date DATE,
+                PRIMARY KEY (code, year)
+            )
+        """)
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS industry_class (
+                code VARCHAR PRIMARY KEY,
+                name VARCHAR,
+                industry_sw VARCHAR
+            )
+        """)
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS factor_value (
+                code VARCHAR,
+                date DATE,
+                factor_name VARCHAR,
+                raw_value DOUBLE,
+                neut_value DOUBLE,
+                PRIMARY KEY (code, date, factor_name)
+            )
+        """)
+
         logger.info("Tables created/verified")
 
     def upsert_daily_quote(self, df: pd.DataFrame):
@@ -113,6 +161,57 @@ class DuckDBManager:
             return
         self.conn.execute("INSERT OR REPLACE INTO index_quote SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into index_quote")
+
+    def upsert_financial_ext(self, df: pd.DataFrame):
+        """写入扩展财务数据"""
+        if df.empty:
+            return
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+        df = df.dropna(subset=["date"])
+        df = df.drop_duplicates(subset=["code", "date"], keep="last")
+        # 只写入表中定义的列
+        cols = ["code", "date", "pe", "pb", "roe", "roa", "revenue",
+                "net_profit", "total_assets", "total_liability", "debt_ratio", "ocf"]
+        df = df[[c for c in cols if c in df.columns]]
+        self.conn.execute("INSERT OR REPLACE INTO financial_ext SELECT * FROM df")
+        logger.info(f"Upserted {len(df)} rows into financial_ext")
+
+    def upsert_dividend(self, df: pd.DataFrame):
+        """写入分红数据"""
+        if df.empty:
+            return
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        df = df.dropna(subset=["dividend_per_share"])
+        df = df.drop_duplicates(subset=["code", "year"], keep="last")
+        cols = ["code", "year", "dividend_per_share", "ex_date"]
+        df = df[[c for c in cols if c in df.columns]]
+        self.conn.execute("INSERT OR REPLACE INTO dividend SELECT * FROM df")
+        logger.info(f"Upserted {len(df)} rows into dividend")
+
+    def upsert_industry_class(self, df: pd.DataFrame):
+        """写入行业分类数据"""
+        if df.empty:
+            return
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        df = df.drop_duplicates(subset=["code"], keep="last")
+        cols = ["code", "name", "industry_sw"]
+        df = df[[c for c in cols if c in df.columns]]
+        self.conn.execute("INSERT OR REPLACE INTO industry_class SELECT * FROM df")
+        logger.info(f"Upserted {len(df)} rows into industry_class")
+
+    def upsert_factor_value(self, df: pd.DataFrame):
+        """写入因子值数据"""
+        if df.empty:
+            return
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+        df = df.dropna(subset=["raw_value"])
+        df = df.drop_duplicates(subset=["code", "date", "factor_name"], keep="last")
+        cols = ["code", "date", "factor_name", "raw_value", "neut_value"]
+        df = df[[c for c in cols if c in df.columns]]
+        self.conn.execute("INSERT OR REPLACE INTO factor_value SELECT * FROM df")
+        logger.info(f"Upserted {len(df)} rows into factor_value")
 
     def query(self, sql: str) -> pd.DataFrame:
         """执行查询，返回DataFrame"""

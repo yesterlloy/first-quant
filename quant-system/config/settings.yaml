@@ -32,6 +32,17 @@ dashboard:
   host: "0.0.0.0"
   debug: false
 
+factor_dashboard:
+  port: 8051
+  host: "0.0.0.0"
+  debug: false
+
+factor:
+  forward_period: 20    # 前瞻收益期（交易日）
+  n_layers: 5            # 分层数
+  icir_threshold: 0.5    # 强有效ICIR阈值
+  max_decay_period: 120  # 衰减分析最大前瞻期
+
 logging:
   level: INFO
   path: "logs"

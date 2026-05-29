@@ -10,3 +10,5 @@ schedule>=1.2
 loguru>=0.7
 baostock>=0.8
 adata>=2.0
+scipy>=1.10       # 回归分析
+pytest>=7.0       # 测试
