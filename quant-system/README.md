@@ -1,6 +1,6 @@
 # A股因子选股量化系统
 
-基于因子选股的A股量化分析系统，支持数据采集、因子计算、因子检验、策略回测、可视化展示。
+基于因子选股的A股量化分析系统，支持数据采集、因子计算、因子检验、ML因子合成、策略回测、可视化展示。
 
 ## 开发进度
 
@@ -8,7 +8,7 @@
 |-------|------|------|
 | Phase 1 | 数据采集 + 存储 + 基础回测原型 | ✅ 完成 |
 | Phase 2 | 因子系统 + 因子检验 | ✅ 完成 |
-| Phase 3 | ML增强 + 因子合成 | 待开发 |
+| Phase 3 | ML增强 + 因子合成 | ✅ 完成 |
 | Phase 4 | 实盘对接 + 风控监控 | 待开发 |
 
 ## 快速启动
@@ -17,20 +17,19 @@
 # Phase 1: 数据采集
 python scripts/run_collector.py
 
-# Phase 2: 因子计算
-python scripts/run_factor_compute.py --date 2026-05-29
+# Phase 2: 因子计算 + 检验
+python scripts/run_factor_compute.py
+python scripts/run_factor_test.py
 
-# Phase 2: 因子检验
-python scripts/run_factor_test.py --start 20200101 --end 20260529
+# Phase 3: ML训练
+python scripts/run_feature_build.py          # 特征构建
+python scripts/run_train.py --model lgbm_v1  # 模型训练
+python scripts/run_compare.py                # 策略对比
 
-# Phase 2: 因子Dashboard
-python scripts/run_factor_dashboard.py
-
-# Phase 1: 回测
-python scripts/run_backtest.py
-
-# Phase 1: 基础Dashboard
-python scripts/run_dashboard.py
+# Dashboard
+python scripts/run_dashboard.py       # 基础看板 (8050)
+python scripts/run_factor_dashboard.py # 因子看板 (8051)
+python scripts/run_ml_dashboard.py    # ML看板 (8052)
 ```
 
 ## Docker部署
@@ -59,22 +58,29 @@ docker compose up -d
 | 衰减分析 | `decay_test.py` | 半衰期、IC衰减曲线 |
 | 因子筛选 | `screening.py` | 自动筛出 strong/moderate/weak |
 
+## ML因子合成
+
+| 模块 | 说明 |
+|------|------|
+| 特征工程 | 缺失值填充、MAD去极值、Z-score、因子交叉、行业dummy |
+| 数据集 | 滚动窗口训练/验证/测试，防未来信息泄露 |
+| LightGBM | 主力GBDT模型，滚动训练 |
+| XGBoost | 对比模型 |
+| Ridge/Lasso | 线性基线 |
+| Ensemble | 多模型融合（等权/IC加权） |
+| 传统基线 | 等权/IC加权/ICIR加权因子合成 |
+| 超参搜索 | Optuna贝叶斯优化 |
+| 评估 | IC/多空/过拟合检测 |
+
 ## 项目结构
 
 ```
 quant-system/
 ├── config/              # 配置文件
 ├── data/
-│   ├── collector/       # 数据采集模块（akshare/baostock/adata多源）
-│   │   ├── akshare_collector.py
-│   │   ├── multi_source.py        # 多数据源自动切换
-│   │   ├── fundamental.py         # 基础财务
-│   │   ├── financial_ext.py       # 扩展财务（Phase 2）
-│   │   ├── dividend.py            # 分红数据（Phase 2）
-│   │   ├── industry.py            # 行业分类（Phase 2）
-│   │   └── scheduler.py           # 定时采集
+│   ├── collector/       # 数据采集（akshare/baostock/adata多源）
 │   └── db/              # DuckDB数据库管理
-├── factor/              # 因子模块（Phase 2）
+├── factor/              # 因子模块
 │   ├── base.py          # 因子基类
 │   ├── registry.py      # 因子注册表
 │   ├── valuation.py     # 估值因子
@@ -82,21 +88,35 @@ quant-system/
 │   ├── growth.py        # 成长因子
 │   ├── technical.py     # 技术因子
 │   ├── scale.py         # 规模因子
-│   ├── processor.py     # 因子计算引擎
+│   ├── processor.py     # 计算引擎
 │   └── neutralize.py    # 中性化处理
-├── factor_test/         # 因子检验模块（Phase 2）
+├── factor_test/         # 因子检验
 │   ├── ic_test.py       # IC分析
 │   ├── layer_test.py    # 分层回测
 │   ├── regression_test.py # 截面回归
 │   ├── decay_test.py    # 衰减分析
 │   ├── screening.py     # 因子筛选
-│   └── report.py        # 检验报告汇总
+│   └── report.py        # 检验报告
+├── ml/                  # ML因子合成
+│   ├── feature_engine.py # 特征工程
+│   ├── dataset.py        # 数据集构建
+│   ├── trainer.py        # 滚动训练引擎
+│   ├── predictor.py      # 预测信号生成
+│   ├── evaluator.py      # 模型评估
+│   ├── hyperopt.py       # 超参搜索
+│   └── models/
+│       ├── lgbm.py       # LightGBM
+│       ├── xgboost.py    # XGBoost
+│       ├── linear.py     # Ridge/Lasso
+│       └── ensemble.py   # 多模型融合
 ├── strategy/            # 策略模块
+│   ├── ml_factor.py     # 传统因子合成策略
 ├── backtest/            # 回测引擎
+│   ├── compare.py       # 多策略对比回测
 ├── visual/              # 可视化
 │   ├── dashboard.py     # 基础看板
-│   ├── factor_dashboard.py  # 因子看板（Phase 2）
-│   └── ic_heatmap.py    # IC热力图（Phase 2）
+│   ├── factor_dashboard.py # 因子看板
+│   ├── ml_dashboard.py  # ML看板
+│   └── ic_heatmap.py    # IC图表
 ├── scripts/             # 运行脚本
 └── tests/               # 测试
-```

@@ -43,6 +43,16 @@ factor:
   icir_threshold: 0.5    # 强有效ICIR阈值
   max_decay_period: 120  # 衰减分析最大前瞻期
 
+ml:
+  train_months: 24      # 训练窗口月数
+  val_months: 6         # 验证窗口月数
+  forward_period: 20    # ML标签前瞻期
+  n_mad: 3.0            # 特征去极值阈值
+  num_boost_round: 500  # LightGBM迭代次数
+  early_stopping: 50    # 早停轮数
+  optuna_trials: 50     # 超参搜索次数
+  model_dir: "data/models"  # 模型存储路径
+
 logging:
   level: INFO
   path: "logs"
