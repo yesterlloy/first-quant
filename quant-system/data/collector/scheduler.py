@@ -4,7 +4,7 @@ import yaml
 import schedule
 import time
 from loguru import logger
-from data.collector.akshare_collector import AkshareCollector
+from data.collector.multi_source import MultiSourceCollector
 from data.collector.fundamental import FundamentalCollector
 from data.db.duckdb_manager import DuckDBManager
 
@@ -20,7 +20,7 @@ class CollectorScheduler:
         collector_cfg = self.config["collector"]
 
         self.db = DuckDBManager(data_cfg["db_path"])
-        self.collector = AkshareCollector(
+        self.collector = MultiSourceCollector(
             retry_max=collector_cfg["retry_max"],
             retry_delay=collector_cfg["retry_delay"],
             cache_path=data_cfg["cache_path"],
@@ -42,8 +42,11 @@ class CollectorScheduler:
         try:
             # 1. 获取股票列表
             stock_list = self.collector.get_stock_list()
-            if not stock_list.empty:
-                self.db.upsert_stock_info(stock_list)
+            if stock_list.empty:
+                logger.error("股票列表获取失败，跳过本次采集")
+                return
+
+            self.db.upsert_stock_info(stock_list)
 
             # 2. 采集日线行情（增量）
             codes = stock_list["code"].tolist()
@@ -77,8 +80,11 @@ class CollectorScheduler:
         try:
             # 1. 股票列表
             stock_list = self.collector.get_stock_list()
-            if not stock_list.empty:
-                self.db.upsert_stock_info(stock_list)
+            if stock_list.empty:
+                logger.error("股票列表获取失败，跳过本次全量采集")
+                return
+
+            self.db.upsert_stock_info(stock_list)
 
             # 2. 全量日线行情
             codes = stock_list["code"].tolist()

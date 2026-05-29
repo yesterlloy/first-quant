@@ -30,3 +30,5 @@ Thumbs.db
 
 # OpenClaw internal
 .openclaw/node_modules/
+
+.claude

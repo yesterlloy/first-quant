@@ -2,14 +2,14 @@
 
 data:
   # 数据源配置
-  source: akshare
+  source: multi_source  # 多数据源自动切换
   # 数据范围
   start_date: "20200101"  # 5年数据
   end_date: "20261231"    # 到当前
 
-  # 数据库配置
-  db_path: "/app/data/db/quant.duckdb"
-  cache_path: "/app/data/cache"
+  # 数据库配置（相对路径，本地和Docker通用）
+  db_path: "data/db/quant.duckdb"
+  cache_path: "data/cache"
 
   # 指数列表
   indices:
@@ -19,7 +19,7 @@ data:
 
 collector:
   retry_max: 3
-  retry_delay: 5  # 秒
+  retry_delay: 10  # 秒（指数退避，实际等待 10s/20s/30s）
   batch_size: 50  # 每批采集股票数
 
 backtest:
@@ -34,4 +34,4 @@ dashboard:
 
 logging:
   level: INFO
-  path: "/app/logs"
+  path: "logs"

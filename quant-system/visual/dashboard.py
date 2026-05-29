@@ -128,7 +128,7 @@ def run_server(config_path: str = "config/settings.yaml"):
     dash_cfg = yaml.safe_load(open(config_path))["dashboard"]
 
     app = create_app(config_path)
-    app.run_server(
+    app.run(
         host=dash_cfg["host"],
         port=dash_cfg["port"],
         debug=dash_cfg["debug"],

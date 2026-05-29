@@ -8,3 +8,5 @@ plotly>=5.18
 pyyaml>=6.0
 schedule>=1.2
 loguru>=0.7
+baostock>=0.8
+adata>=2.0

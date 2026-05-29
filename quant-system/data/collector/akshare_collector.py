@@ -2,6 +2,11 @@
 
 import time
 import os
+
+# 绕过代理直连国内数据源（东方财富等）
+os.environ["no_proxy"] = "eastmoney.com,push2.eastmoney.com,*.eastmoney.com,sina.com.cn,*.sina.com.cn,tushare.cn"
+os.environ["NO_PROXY"] = os.environ["no_proxy"]
+
 import pandas as pd
 import akshare as ak
 from loguru import logger
@@ -18,7 +23,7 @@ class AkshareCollector:
         os.makedirs(cache_path, exist_ok=True)
 
     def _fetch_with_retry(self, func, *args, **kwargs) -> pd.DataFrame:
-        """带重试的数据获取"""
+        """带重试的数据获取（指数退避）"""
         for attempt in range(1, self.retry_max + 1):
             try:
                 df = func(*args, **kwargs)
@@ -28,7 +33,9 @@ class AkshareCollector:
             except Exception as e:
                 logger.warning(f"Attempt {attempt}/{self.retry_max} failed: {e}")
                 if attempt < self.retry_max:
-                    time.sleep(self.retry_delay)
+                    wait = self.retry_delay * attempt  # 指数退避：5s, 10s, 15s
+                    logger.info(f"Waiting {wait}s before retry...")
+                    time.sleep(wait)
 
         logger.error(f"All {self.retry_max} attempts failed")
         return pd.DataFrame()
@@ -129,8 +136,8 @@ class AkshareCollector:
             if not df.empty:
                 all_data.append(df)
 
-            # 避免请求过快
-            time.sleep(0.3)
+            # 避免请求过快被限流
+            time.sleep(1.0)
 
         if all_data:
             result = pd.concat(all_data, ignore_index=True)

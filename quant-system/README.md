@@ -18,7 +18,7 @@ python scripts/run_dashboard.py
 ## Docker部署
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ## 项目结构

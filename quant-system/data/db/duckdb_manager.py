@@ -86,67 +86,32 @@ class DuckDBManager:
         """写入日线行情数据（增量更新）"""
         if df.empty:
             return
-
-        # 删除已有数据再插入（避免重复）
-        codes = df["code"].unique().tolist()
-        dates = df["date"].unique().tolist()
-
-        self.conn.execute("""
-            DELETE FROM daily_quote
-            WHERE code IN ({codes}) AND date IN ({dates})
-        """.format(
-            codes=", ".join([f"'{c}'" for c in codes]),
-            dates=", ".join([f"'{d}'" for d in dates])
-        ))
-
-        self.conn.execute("INSERT INTO daily_quote SELECT * FROM df")
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        df["date"] = pd.to_datetime(df["date"]).dt.date
+        df = df.drop_duplicates(subset=["code", "date"], keep="last")
+        self.conn.execute("INSERT OR REPLACE INTO daily_quote SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into daily_quote")
 
     def upsert_stock_info(self, df: pd.DataFrame):
         """写入股票基本信息"""
         if df.empty:
             return
-
-        self.conn.execute("DELETE FROM stock_info")
-        self.conn.execute("INSERT INTO stock_info SELECT * FROM df")
+        df["code"] = df["code"].astype(str).str.zfill(6)
+        self.conn.execute("INSERT OR REPLACE INTO stock_info SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into stock_info")
 
     def upsert_financial(self, df: pd.DataFrame):
         """写入财务数据"""
         if df.empty:
             return
-
-        codes = df["code"].unique().tolist()
-        dates = df["date"].unique().tolist()
-
-        self.conn.execute("""
-            DELETE FROM financial
-            WHERE code IN ({codes}) AND date IN ({dates})
-        """.format(
-            codes=", ".join([f"'{c}'" for c in codes]),
-            dates=", ".join([f"'{d}'" for d in dates])
-        ))
-
-        self.conn.execute("INSERT INTO financial SELECT * FROM df")
+        self.conn.execute("INSERT OR REPLACE INTO financial SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into financial")
 
     def upsert_index_quote(self, df: pd.DataFrame):
         """写入指数行情"""
         if df.empty:
             return
-
-        codes = df["code"].unique().tolist()
-        dates = df["date"].unique().tolist()
-
-        self.conn.execute("""
-            DELETE FROM index_quote
-            WHERE code IN ({codes}) AND date IN ({dates})
-        """.format(
-            codes=", ".join([f"'{c}'" for c in codes]),
-            dates=", ".join([f"'{d}'" for d in dates])
-        ))
-
-        self.conn.execute("INSERT INTO index_quote SELECT * FROM df")
+        self.conn.execute("INSERT OR REPLACE INTO index_quote SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into index_quote")
 
     def query(self, sql: str) -> pd.DataFrame:
@@ -164,7 +129,7 @@ class DuckDBManager:
         if end_date:
             conditions.append(f"date <= '{end_date}'")
 
-        where = " AND " + " AND ".join(conditions) if conditions else ""
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
         return self.query(f"SELECT * FROM daily_quote{where} ORDER BY date")
 
     def get_stock_list(self) -> pd.DataFrame:
@@ -177,8 +142,10 @@ class DuckDBManager:
         try:
             row = self.query("SELECT COUNT(DISTINCT code) as stocks, MIN(date) as min_date, MAX(date) as max_date FROM daily_quote")
             result["stocks"] = int(row["stocks"][0])
-            result["min_date"] = str(row["min_date"][0])
-            result["max_date"] = str(row["max_date"][0])
+            min_d = str(row["min_date"][0])[:10]
+            max_d = str(row["max_date"][0])[:10]
+            result["min_date"] = min_d if min_d not in ("NaT", "None", "Na") else "N/A"
+            result["max_date"] = max_d if max_d not in ("NaT", "None", "Na") else "N/A"
         except Exception:
             result = {"stocks": 0, "min_date": "N/A", "max_date": "N/A"}
         return result
