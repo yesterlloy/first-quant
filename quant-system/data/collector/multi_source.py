@@ -2,13 +2,21 @@
 
 import os
 import time
-import concurrent.futures
+import signal
 
 os.environ["no_proxy"] = "eastmoney.com,push2.eastmoney.com,*.eastmoney.com,sina.com.cn,*.sina.com.cn,tushare.cn"
 os.environ["NO_PROXY"] = os.environ["no_proxy"]
 
 import pandas as pd
 from loguru import logger
+
+
+class _TimeoutError(Exception):
+    pass
+
+
+def _alarm_handler(signum, frame):
+    raise _TimeoutError("timed out")
 
 
 class MultiSourceCollector:
@@ -27,20 +35,50 @@ class MultiSourceCollector:
         self.cache_path = cache_path
         os.makedirs(cache_path, exist_ok=True)
 
-    def _try_source(self, name: str, func, timeout: int = 30) -> pd.DataFrame:
-        """尝试单个数据源，带超时保护，失败返回空 DataFrame"""
+    @staticmethod
+    def _reset_baostock():
+        """强制重建 baostock socket，防止旧连接污染后续调用"""
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(func)
-                df = future.result(timeout=timeout)
+            import baostock as bs
+            from baostock.util import socketutil
+            import socket as _socket
+            try:
+                socketutil.default_socket.close()
+            except Exception:
+                pass
+            try:
+                bs.logout()
+            except Exception:
+                pass
+            socketutil.default_socket = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+            socketutil.default_socket.settimeout(20)
+            socketutil.default_socket.connect((bs.cons.BAOSTOCK_SERVER_IP, bs.cons.BAOSTOCK_SERVER_PORT))
+            logger.info("[baostock] socket reset OK")
+        except Exception as e:
+            logger.warning(f"[baostock] socket reset failed: {e}")
+
+    def _try_source(self, name: str, func, timeout: int = 30) -> pd.DataFrame:
+        """尝试单个数据源，用 SIGALRM 实现真正的超时中断"""
+        old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
+        signal.alarm(timeout)
+        try:
+            df = func()
+            signal.alarm(0)  # 取消闹钟
             if df is not None and not df.empty:
                 logger.info(f"[{name}] OK: {len(df)} rows")
                 return df
             logger.warning(f"[{name}] returned empty")
-        except concurrent.futures.TimeoutError:
+        except _TimeoutError:
             logger.warning(f"[{name}] timed out after {timeout}s")
+            if name == "baostock":
+                self._reset_baostock()
         except Exception as e:
+            signal.alarm(0)
             logger.warning(f"[{name}] failed: {type(e).__name__}: {e}")
+            if name == "baostock":
+                self._reset_baostock()
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
         return pd.DataFrame()
 
     # ── 股票列表 ────────────────────────────────────────────
@@ -191,10 +229,17 @@ class MultiSourceCollector:
 
     def _daily_quote_baostock(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
         import baostock as bs
+        from baostock.util import socketutil
         prefix = "sh" if code.startswith("6") else "sz"
         bs_code = f"{prefix}.{code}"
         start = f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:]}"
         end = f"{end_date[:4]}-{end_date[4:6]}-{end_date[6:]}"
+
+        # 确保 socket 有超时，防止永久阻塞
+        try:
+            socketutil.default_socket.settimeout(20)
+        except Exception:
+            pass
 
         lg = bs.login()
         if lg is None or (hasattr(lg, 'error_code') and lg.error_code != '0'):
@@ -299,9 +344,15 @@ class MultiSourceCollector:
 
     def _index_quote_baostock(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
         import baostock as bs
+        from baostock.util import socketutil
         bs_code = f"sh.{code}"
         start = f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:]}"
         end = f"{end_date[:4]}-{end_date[4:6]}-{end_date[6:]}"
+
+        try:
+            socketutil.default_socket.settimeout(20)
+        except Exception:
+            pass
 
         lg = bs.login()
         if lg is None or (hasattr(lg, 'error_code') and lg.error_code != '0'):
