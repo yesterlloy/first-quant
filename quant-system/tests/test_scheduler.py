@@ -231,3 +231,10 @@ def test_daily_report_task():
     assert result is not None  # Returns the formatted report string
     assert isinstance(result, str)
     db.close()
+
+
+def test_cli_import():
+    """Just verify CLI module can be imported"""
+    from scheduler.cli import main
+    assert main is not None
+    assert callable(main)
