@@ -83,3 +83,84 @@ def test_get_recent_logs():
     all_logs = store.get_recent_logs(limit=10)
     assert len(all_logs) == 5  # All 5 tasks
     db.close()
+
+
+def test_task_wrapper_success():
+    from scheduler.task_wrapper import TaskWrapper
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    calls = []
+    def test_func():
+        calls.append(1)
+        return "done"
+
+    wrapper = TaskWrapper(db, "test_task", test_func)
+    result = wrapper.execute()
+
+    assert result == "done"
+    assert len(calls) == 1
+    db.close()
+
+
+def test_task_wrapper_retry_on_failure():
+    from scheduler.task_wrapper import TaskWrapper
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    calls = []
+    def flaky_func():
+        calls.append(1)
+        if len(calls) < 3:
+            raise Exception(f"Fail attempt {len(calls)}")
+        return "success"
+
+    wrapper = TaskWrapper(db, "test_task", flaky_func, max_retries=3, cutoff_hour=23)
+    result = wrapper.execute()
+
+    assert result == "success"
+    assert len(calls) == 3  # 2 failures + 1 success
+    db.close()
+
+
+def test_task_wrapper_exhaust_retries():
+    from scheduler.task_wrapper import TaskWrapper
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    calls = []
+    def always_fail():
+        calls.append(1)
+        raise Exception("Always fails")
+
+    wrapper = TaskWrapper(db, "test_task", always_fail, max_retries=2, cutoff_hour=23)
+    result = wrapper.execute()
+
+    assert result is None  # Failed after retries
+    assert len(calls) == 3  # 1 original + 2 retries
+    db.close()
+
+
+def test_task_wrapper_logs_to_db():
+    from scheduler.task_wrapper import TaskWrapper
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    def success_func():
+        return "ok"
+
+    wrapper = TaskWrapper(db, "test_task", success_func)
+    wrapper.execute()
+
+    logs = db.query("SELECT * FROM scheduler_log")
+    assert len(logs) == 1
+    assert logs.iloc[0]["status"] == "success"
+    db.close()
