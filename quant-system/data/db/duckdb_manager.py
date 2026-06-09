@@ -169,6 +169,24 @@ class DuckDBManager:
             )
         """)
 
+        # Phase 4 新增表 - 调度器日志
+        self.conn.execute("CREATE SEQUENCE IF NOT EXISTS scheduler_log_id_seq START 1")
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS scheduler_log (
+                id INTEGER PRIMARY KEY DEFAULT nextval('scheduler_log_id_seq'),
+                task_name VARCHAR(100) NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                start_time TIMESTAMP NOT NULL,
+                end_time TIMESTAMP,
+                duration_seconds FLOAT,
+                retry_count INTEGER DEFAULT 0,
+                error_message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_scheduler_log_task ON scheduler_log(task_name)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_scheduler_log_time ON scheduler_log(start_time)")
+
         logger.info("Tables created/verified")
 
     def upsert_daily_quote(self, df: pd.DataFrame):
