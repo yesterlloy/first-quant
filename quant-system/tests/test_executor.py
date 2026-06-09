@@ -28,3 +28,53 @@ class TestExecutorTables:
         result = db.query("SELECT * FROM information_schema.tables WHERE table_name='position_log'")
         assert len(result) == 1
         db.close()
+
+
+class TestSignalLoader:
+    """信号加载测试"""
+
+    def test_load_signals_success(self):
+        from executor.signal_loader import SignalLoader
+
+        db = DuckDBManager(":memory:")
+        db.connect()
+
+        # 插入测试信号
+        df = pd.DataFrame({
+            "code": ["000001", "000002", "000003"],
+            "date": ["2024-01-31", "2024-01-31", "2024-01-31"],
+            "model_name": ["lgbm_v1", "lgbm_v1", "lgbm_v1"],
+            "predicted_return": [0.05, 0.03, 0.01],
+            "signal": [1, 1, 0],
+        })
+        df["date"] = pd.to_datetime(df["date"]).dt.date
+        db.conn.execute("CREATE TABLE ml_signal AS SELECT * FROM df")
+
+        loader = SignalLoader(db)
+        result = loader.load_signals("2024-01-31", "lgbm_v1")
+
+        assert len(result) == 3
+        assert "code" in result.columns
+        assert "predicted_return" in result.columns
+        db.close()
+
+    def test_load_signals_empty(self):
+        from executor.signal_loader import SignalLoader
+
+        db = DuckDBManager(":memory:")
+        db.connect()
+        db.conn.execute("""
+            CREATE TABLE ml_signal (
+                code VARCHAR,
+                date DATE,
+                model_name VARCHAR,
+                predicted_return DOUBLE,
+                signal INTEGER
+            )
+        """)
+
+        loader = SignalLoader(db)
+        result = loader.load_signals("2024-01-31", "lgbm_v1")
+
+        assert result.empty
+        db.close()
