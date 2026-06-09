@@ -203,3 +203,31 @@ def test_scheduler_register_task():
     scheduler.register_task("test_task", test_func, cron="* * * * *")
     assert "test_task" in scheduler.tasks
     db.close()
+
+
+def test_data_collection_task():
+    from scheduler.tasks import data_collection_task
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    # Should not raise exception even with empty DB (no-op placeholder)
+    result = data_collection_task(db)
+    # Returns True as success indicator
+    assert result is True
+    db.close()
+
+
+def test_daily_report_task():
+    from scheduler.tasks import daily_report_task
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    # Should not raise exception even with no positions
+    result = daily_report_task(db)
+    assert result is not None  # Returns the formatted report string
+    assert isinstance(result, str)
+    db.close()
