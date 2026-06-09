@@ -128,6 +128,47 @@ class DuckDBManager:
             )
         """)
 
+        # Phase 4 新增表 - 交易记录
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS order_log (
+                order_id VARCHAR PRIMARY KEY,
+                date DATE,
+                code VARCHAR,
+                action VARCHAR,
+                shares INTEGER,
+                price DOUBLE,
+                status VARCHAR,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP
+            )
+        """)
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS trade_log (
+                trade_id VARCHAR PRIMARY KEY,
+                order_id VARCHAR,
+                date DATE,
+                code VARCHAR,
+                action VARCHAR,
+                shares INTEGER,
+                price DOUBLE,
+                filled_at TIMESTAMP
+            )
+        """)
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS position_log (
+                date DATE,
+                code VARCHAR,
+                shares INTEGER,
+                weight DOUBLE,
+                cost_price DOUBLE,
+                current_price DOUBLE,
+                market_value DOUBLE,
+                PRIMARY KEY (date, code)
+            )
+        """)
+
         logger.info("Tables created/verified")
 
     def upsert_daily_quote(self, df: pd.DataFrame):
