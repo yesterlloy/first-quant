@@ -1,0 +1,32 @@
+# 告警配置
+alert:
+  # 告警去重时间窗口（秒）
+  dedup_window_seconds: 60
+
+  channels:
+    # 控制台告警
+    console:
+      enabled: true
+
+    # 企业微信机器人
+    wechat_work:
+      enabled: false
+      webhook_url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY_HERE"
+      timeout: 10
+
+    # 邮件告警
+    email:
+      enabled: false
+      smtp_host: "smtp.qq.com"
+      smtp_port: 587
+      username: "your-email@qq.com"
+      password: "your-password"
+      to_addrs: ["receiver@example.com"]
+      use_tls: true
+
+  # 告警规则开关
+  rules:
+    stop_loss: true          # 止损触发
+    risk_block: true         # 风控拦截
+    order_filled: false      # 订单成交
+    daily_report: true       # 每日持仓报告

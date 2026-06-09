@@ -9,7 +9,7 @@ from .position_calc import PositionCalculator
 from .order_manager import OrderManager
 from .trade_log import TradeLogger
 from .broker.base import BaseBroker
-from risk import RiskChecker, SinglePositionLimit, StopLossExecutor, AlertManager, ConsoleAlert
+from risk import RiskChecker, SinglePositionLimit, StopLossExecutor, AlertManager, ConsoleAlert, AlertContext
 
 
 class Rebalancer:

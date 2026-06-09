@@ -9,7 +9,14 @@ from .rules import (
 )
 from .checker import RiskChecker
 from .stop_loss import StopLossExecutor
-from .alert import AlertChannel, ConsoleAlert, AlertManager
+from .alert import (
+    AlertChannel,
+    ConsoleAlert,
+    WeChatWorkAlert,
+    EmailAlert,
+    AlertManager,
+    AlertContext,
+)
 
 __all__ = [
     "RiskRule",
@@ -21,5 +28,8 @@ __all__ = [
     "StopLossExecutor",
     "AlertChannel",
     "ConsoleAlert",
+    "WeChatWorkAlert",
+    "EmailAlert",
     "AlertManager",
+    "AlertContext",
 ]
