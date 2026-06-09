@@ -272,8 +272,10 @@ class DuckDBManager:
         self.conn.execute("INSERT OR REPLACE INTO factor_value SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into factor_value")
 
-    def query(self, sql: str) -> pd.DataFrame:
+    def query(self, sql: str, params=None) -> pd.DataFrame:
         """执行查询，返回DataFrame"""
+        if params:
+            return self.conn.execute(sql, params).df()
         return self.conn.execute(sql).df()
 
     def get_daily_quote(self, code: str = None, start_date: str = None,
