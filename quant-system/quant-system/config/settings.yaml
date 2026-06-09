@@ -1,0 +1,22 @@
+data:
+  db_path: "data/quant.db"
+
+backtest:
+  initial_capital: 1000000
+  commission: 0.0003
+  slippage: 0.0001
+
+dashboard:
+  host: "127.0.0.1"
+  port: 8050
+  factor_port: 8051
+  ml_port: 8052
+  trading_port: 8053
+  debug: true
+
+rebalance:
+  top_n: 10
+  total_ratio: 0.8
+  max_single: 0.1
+  price_offset: 0.02
+  stop_loss_ratio: -0.05
