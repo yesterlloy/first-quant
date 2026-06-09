@@ -7,6 +7,12 @@ from .order_manager import OrderManager
 from .trade_log import TradeLogger
 from .rebalance import Rebalancer
 from .broker import BaseBroker, SimulatedBroker
+from .pnl_calc import (
+    PnLCalculator,
+    TradePnL,
+    PositionPnL,
+    PortfolioMetrics,
+)
 
 __all__ = [
     "SignalLoader",
@@ -17,4 +23,8 @@ __all__ = [
     "Rebalancer",
     "BaseBroker",
     "SimulatedBroker",
+    "PnLCalculator",
+    "TradePnL",
+    "PositionPnL",
+    "PortfolioMetrics",
 ]
