@@ -9,6 +9,7 @@ from .position_calc import PositionCalculator
 from .order_manager import OrderManager
 from .trade_log import TradeLogger
 from .broker.base import BaseBroker
+from risk import RiskChecker, SinglePositionLimit, StopLossExecutor, AlertManager, ConsoleAlert
 
 
 class Rebalancer:
@@ -33,6 +34,20 @@ class Rebalancer:
         )
         self.trade_logger = TradeLogger(db)
 
+        # 风控模块
+        self.risk_checker = RiskChecker(db, rules=[
+            SinglePositionLimit(max_ratio=self.config.get("max_single", 0.1)),
+        ])
+        self.stop_loss_executor = StopLossExecutor(
+            db, broker,
+            max_loss_ratio=self.config.get("stop_loss_ratio", -0.05),
+        )
+
+        # 告警
+        self.alert_mgr = AlertManager()
+        if self.config.get("enable_console_alert", True):
+            self.alert_mgr.add_channel(ConsoleAlert())
+
     def run(self, date: str, model_name: str = "lgbm_v1", total_capital: float = 1000000):
         """执行月度调仓全流程
 
@@ -45,6 +60,14 @@ class Rebalancer:
             dict: 调仓结果统计
         """
         logger.info(f"Starting rebalance on {date}, model={model_name}")
+
+        # 0. 事前风控：先执行止损检查
+        stop_loss_orders = self.stop_loss_executor.check_and_execute(date)
+        if stop_loss_orders:
+            self.alert_mgr.warning(
+                "Stop Loss Executed",
+                f"Executed {len(stop_loss_orders)} stop loss orders"
+            )
 
         # 1. 加载信号
         signals = self.signal_loader.load_signals(date, model_name)
@@ -68,7 +91,7 @@ class Rebalancer:
         target_positions = self.position_calc.calc_weights(portfolio, prices, total_capital)
         logger.info(f"Calculated target positions: {len(target_positions)} stocks")
 
-        # 5. 获取当前持仓
+        # 5. 获取当前持仓（止损后）
         current_positions = self.broker.query_positions()
         logger.info(f"Current positions: {len(current_positions)} stocks")
 
@@ -78,13 +101,33 @@ class Rebalancer:
 
         if orders.empty:
             logger.info("No orders to execute")
-            return {"status": "no_orders"}
+            return {"status": "no_orders", "stop_loss_count": len(stop_loss_orders)}
 
-        # 7. 执行订单
-        trades = self.broker.execute_orders(orders)
+        # 7. 风控检查
+        current_positions = self.broker.query_positions()  # 刷新持仓
+        passed_orders, blocked_orders, _ = self.risk_checker.filter_blocked_orders(
+            orders, current_positions, date
+        )
+
+        if len(blocked_orders) > 0:
+            self.alert_mgr.warning(
+                "Risk Block Alert",
+                f"Blocked {len(blocked_orders)} orders by risk check"
+            )
+
+        if passed_orders.empty:
+            logger.info("No orders passed risk check")
+            return {
+                "status": "all_orders_blocked",
+                "blocked_count": len(blocked_orders),
+                "stop_loss_count": len(stop_loss_orders),
+            }
+
+        # 8. 执行通过风控的订单
+        trades = self.broker.execute_orders(passed_orders)
         logger.info(f"Executed {len(trades)} trades")
 
-        # 8. 记录交易
+        # 9. 记录交易
         self.trade_logger.log_orders(orders, date)
         self.trade_logger.log_trades(trades, date)
         self.trade_logger.log_positions(target_positions, date)
@@ -94,7 +137,10 @@ class Rebalancer:
             "signals": len(signals),
             "portfolio": len(portfolio),
             "orders": len(orders),
+            "passed_orders": len(passed_orders),
+            "blocked_orders": len(blocked_orders),
             "trades": len(trades),
+            "stop_loss_count": len(stop_loss_orders),
         }
         logger.info(f"Rebalance completed: {result}")
         return result

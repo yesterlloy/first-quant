@@ -295,7 +295,7 @@ class TestTradeLogger:
 
         logger.log_positions(positions, date)
 
-        result = db.query("SELECT * FROM position_log")
+        result = db.query("SELECT * FROM position_log ORDER BY code")
         assert len(result) == 2
         assert result.iloc[0]["code"] == "000001"
         assert result.iloc[0]["shares"] == 1000
