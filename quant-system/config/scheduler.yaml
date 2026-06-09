@@ -1,0 +1,48 @@
+# config/scheduler.yaml
+scheduler:
+  enabled: true
+  timezone: "Asia/Shanghai"
+
+  # 错过任务处理策略
+  misfire_grace_time: 3600  # 1小时内的错过才补执行
+  misfire_policy: "skip"    # skip / run_once
+
+  # 全局重试配置
+  retry:
+    max_attempts: 3
+    initial_delay: 1.0      # 初始等待 1 秒
+    max_delay: 8.0          # 最大等待 8 秒
+    backoff_multiplier: 2.0 # 指数因子
+
+  # 告警配置
+  alert_on_failure: true
+  alert_on_success: false
+
+tasks:
+  # 每日数据采集
+  data_collection:
+    enabled: true
+    cron: "0 18 * * 1-5"    # 周一到周五 18:00
+    timeout: 300             # 5分钟超时
+    retry: true
+
+  # 每日因子计算
+  factor_compute:
+    enabled: true
+    cron: "0 19 * * 1-5"    # 周一到周五 19:00
+    timeout: 600             # 10分钟超时
+    retry: true
+
+  # 月度调仓（默认关闭，手动开启）
+  monthly_rebalance:
+    enabled: false
+    cron: "0 14 L * *"      # 每月最后一天 14:00
+    timeout: 1200            # 20分钟超时
+    retry: false
+
+  # 每日持仓报告
+  daily_report:
+    enabled: true
+    cron: "30 18 * * 1-5"   # 周一到周五 18:30
+    timeout: 60
+    retry: false

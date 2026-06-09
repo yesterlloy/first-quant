@@ -20,3 +20,9 @@ def get_alert_manager_from_config(config_path: str = "config/alarm.yaml"):
     from risk.alert import AlertManager
     config = get_alarm_config(config_path)
     return AlertManager.from_config(config)
+
+
+def get_scheduler_config(path: str = "config/scheduler.yaml") -> dict:
+    """获取调度器配置"""
+    with open(path) as f:
+        return yaml.safe_load(f)

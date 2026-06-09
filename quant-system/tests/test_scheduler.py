@@ -164,3 +164,12 @@ def test_task_wrapper_logs_to_db():
     assert len(logs) == 1
     assert logs.iloc[0]["status"] == "success"
     db.close()
+
+
+def test_load_scheduler_config():
+    from config import get_scheduler_config
+
+    config = get_scheduler_config()
+    assert "scheduler" in config
+    assert "tasks" in config
+    assert "data_collection" in config["tasks"]
