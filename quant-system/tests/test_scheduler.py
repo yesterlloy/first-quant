@@ -173,3 +173,33 @@ def test_load_scheduler_config():
     assert "scheduler" in config
     assert "tasks" in config
     assert "data_collection" in config["tasks"]
+
+
+def test_scheduler_initialization():
+    from scheduler.engine import QuantScheduler
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    scheduler = QuantScheduler(db)
+    assert scheduler is not None
+    assert scheduler.running is False
+    db.close()
+
+
+def test_scheduler_register_task():
+    from scheduler.engine import QuantScheduler
+    from data.db.duckdb_manager import DuckDBManager
+
+    db = DuckDBManager(":memory:")
+    db.connect()
+
+    scheduler = QuantScheduler(db)
+    calls = []
+    def test_func():
+        calls.append(1)
+
+    scheduler.register_task("test_task", test_func, cron="* * * * *")
+    assert "test_task" in scheduler.tasks
+    db.close()
