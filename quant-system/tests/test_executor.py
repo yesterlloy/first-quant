@@ -78,3 +78,33 @@ class TestSignalLoader:
 
         assert result.empty
         db.close()
+
+
+class TestPortfolioBuilder:
+    """组合构建测试"""
+
+    def test_build_portfolio_top10(self):
+        from executor.portfolio_builder import PortfolioBuilder
+
+        builder = PortfolioBuilder(top_n=10)
+
+        # 15只股票信号
+        signals = pd.DataFrame({
+            "code": [f"00000{i}" for i in range(15)],
+            "predicted_return": [0.10 - i * 0.005 for i in range(15)],
+            "signal": [1] * 15,
+        })
+
+        result = builder.build_portfolio(signals)
+
+        assert len(result) == 10
+        assert result.iloc[0]["code"] == "000000"  # 最高收益
+        assert "rank" in result.columns
+
+    def test_build_portfolio_empty_input(self):
+        from executor.portfolio_builder import PortfolioBuilder
+
+        builder = PortfolioBuilder(top_n=10)
+        result = builder.build_portfolio(pd.DataFrame())
+
+        assert result.empty
