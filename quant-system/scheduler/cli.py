@@ -12,7 +12,8 @@ def run_scheduler(args):
         data_collection_task,
         factor_compute_task,
         monthly_rebalance_task,
-        daily_report_task
+        daily_report_task,
+        data_validation_task
     )
     from risk import AlertManager
 
@@ -46,7 +47,8 @@ def run_scheduler(args):
             lambda: factor_compute_task(db),
             cron=tasks_config["factor_compute"].get("cron", "0 19 * * 1-5"),
             timeout=tasks_config["factor_compute"].get("timeout", 600),
-            retry=tasks_config["factor_compute"].get("retry", True)
+            retry=tasks_config["factor_compute"].get("retry", True),
+            depends_on=tasks_config["factor_compute"].get("depends_on", [])
         )
 
     # Monthly rebalance (default disabled)
@@ -69,6 +71,16 @@ def run_scheduler(args):
             retry=tasks_config["daily_report"].get("retry", False)
         )
 
+    # Data validation (optional)
+    if tasks_config.get("data_validation", {}).get("enabled", False):
+        scheduler.register_task(
+            "data_validation",
+            lambda: data_validation_task(db),
+            cron=tasks_config["data_validation"].get("cron", "0 19 * * 1-5"),
+            timeout=tasks_config["data_validation"].get("timeout", 300),
+            retry=tasks_config["data_validation"].get("retry", False)
+        )
+
     logger.info("Scheduler configured. Press Ctrl+C to stop.")
     scheduler.start()
 
@@ -83,7 +95,8 @@ def trigger_task(args):
         data_collection_task,
         factor_compute_task,
         monthly_rebalance_task,
-        daily_report_task
+        daily_report_task,
+        data_validation_task
     )
 
     db = DuckDBManager()
@@ -97,6 +110,7 @@ def trigger_task(args):
         "factor_compute": lambda: factor_compute_task(db),
         "monthly_rebalance": lambda: monthly_rebalance_task(db),
         "daily_report": lambda: daily_report_task(db),
+        "data_validation": lambda: data_validation_task(db),
     }
 
     if task_name not in task_map:

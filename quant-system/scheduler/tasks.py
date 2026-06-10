@@ -4,27 +4,26 @@ import sys
 from loguru import logger
 
 
-def data_collection_task(db):
-    """数据采集任务"""
-    logger.info("Starting data collection task...")
+def data_collection_task(db, days: int = 5):
+    """增量数据采集任务
+
+    Args:
+        db: 数据库连接
+        days: 更新最近N天的数据，默认5天（包含周末补数据）
+    """
+    logger.info("Starting incremental data collection task...")
 
     try:
-        # Import collector dynamically to avoid circular imports
         sys.path.insert(0, ".")
-        from data.collector.multi_source import MultiSourceCollector
+        from data.incremental import IncrementalUpdater
 
-        collector = MultiSourceCollector()
+        updater = IncrementalUpdater(db)
 
-        # Get current date
-        from datetime import datetime
-        current_date = datetime.now().strftime("%Y-%m-%d")
+        # 运行增量更新（只更新行情，因子计算在单独任务中）
+        days_updated, rows_updated = updater.update_daily_quotes(days=days)
 
-        # Collect daily data (simplified placeholder - in real scenario would call actual collection)
-        logger.info(f"Collecting data for {current_date}")
-
-        # For now just log success
-        logger.info("Data collection completed successfully")
-        return True
+        logger.info(f"Data collection completed: {days_updated} days, {rows_updated} rows")
+        return True  # Keep backward compatibility with tests
 
     except Exception as e:
         logger.error(f"Data collection failed: {e}")
@@ -32,22 +31,20 @@ def data_collection_task(db):
 
 
 def factor_compute_task(db):
-    """因子计算任务"""
-    logger.info("Starting factor compute task...")
+    """增量因子计算任务"""
+    logger.info("Starting incremental factor compute task...")
 
     try:
-        # Import factor processor dynamically
         sys.path.insert(0, ".")
-        from factor.processor import FactorProcessor
+        from data.incremental import IncrementalUpdater
 
-        processor = FactorProcessor(db)
+        updater = IncrementalUpdater(db)
 
-        # Compute all factors
-        logger.info("Computing all factors")
+        # 运行增量因子计算
+        days_updated, rows_updated = updater.update_factors()
 
-        # Log success
-        logger.info("Factor compute completed successfully")
-        return True
+        logger.info(f"Factor compute completed: {days_updated} days, {rows_updated} rows")
+        return True  # Keep backward compatibility with tests
 
     except Exception as e:
         logger.error(f"Factor compute failed: {e}")
@@ -109,4 +106,31 @@ def daily_report_task(db):
 
     except Exception as e:
         logger.error(f"Daily report generation failed: {e}")
+        raise
+
+
+def data_validation_task(db):
+    """数据完整性校验任务"""
+    logger.info("Starting data integrity validation task...")
+
+    try:
+        sys.path.insert(0, ".")
+        from data.incremental import IncrementalUpdater
+
+        updater = IncrementalUpdater(db)
+
+        # 运行数据完整性校验
+        result = updater.validate_data_integrity()
+
+        if result["status"] == "ok":
+            logger.info("Data integrity validation passed")
+        else:
+            logger.warning(f"Data integrity validation found {len(result['issues'])} issues")
+            for issue in result["issues"]:
+                logger.warning(f"  - {issue['type']}: {issue['message']}")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Data validation failed: {e}")
         raise

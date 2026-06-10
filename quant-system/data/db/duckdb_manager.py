@@ -199,6 +199,10 @@ class DuckDBManager:
         self.conn.execute("INSERT OR REPLACE INTO daily_quote SELECT * FROM df")
         logger.info(f"Upserted {len(df)} rows into daily_quote")
 
+    def insert_quote_data(self, df: pd.DataFrame):
+        """写入日线行情数据（upsert_daily_quote的别名）"""
+        self.upsert_daily_quote(df)
+
     def upsert_stock_info(self, df: pd.DataFrame):
         """写入股票基本信息"""
         if df.empty:

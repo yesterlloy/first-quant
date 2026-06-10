@@ -2,7 +2,7 @@
 
 import signal
 import sys
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 from datetime import datetime
 from loguru import logger
 
@@ -15,6 +15,7 @@ except ImportError:
     logger.warning("APScheduler not installed. Install with: pip install apscheduler")
 
 from .task_wrapper import TaskWrapper
+from .dependency import get_dependency_tracker
 
 
 class QuantScheduler:
@@ -46,19 +47,40 @@ class QuantScheduler:
         # State
         self.running = False
 
+        # Dependency tracker
+        self.dep_tracker = get_dependency_tracker()
+
         # Register signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
         logger.info("QuantScheduler initialized")
 
-    def register_task(self, task_name: str, func: Callable, cron: str = None, timeout: int = 300, retry: bool = True):
-        """注册定时任务"""
+    def register_task(self, task_name: str, func: Callable, cron: str = None, timeout: int = 300, retry: bool = True, depends_on: List[str] = None):
+        """注册定时任务
+
+        Args:
+            task_name: 任务名称
+            func: 任务函数
+            cron: cron表达式
+            timeout: 超时时间(秒)
+            retry: 是否重试
+            depends_on: 依赖的任务列表
+        """
         if task_name in self.tasks:
             logger.warning(f"Task {task_name} already registered, overwriting")
 
         self.tasks[task_name] = func
-        self.task_configs[task_name] = {"cron": cron, "timeout": timeout, "retry": retry}
+        self.task_configs[task_name] = {
+            "cron": cron,
+            "timeout": timeout,
+            "retry": retry,
+            "depends_on": depends_on or []
+        }
+
+        # Register dependencies
+        if depends_on:
+            self.dep_tracker.register_dependency(task_name, depends_on)
 
         if cron:
             retry_config = self.config.get("scheduler", {}).get("retry", {})
@@ -70,6 +92,7 @@ class QuantScheduler:
                 initial_delay=retry_config.get("initial_delay", 1.0),
                 max_delay=retry_config.get("max_delay", 8.0),
                 backoff_multiplier=retry_config.get("backoff_multiplier", 2.0),
+                timeout=timeout,
                 alert_manager=self.alert_manager
             )
 
@@ -125,6 +148,7 @@ class QuantScheduler:
         wrapped_func = TaskWrapper(
             self.db, task_name, self.tasks[task_name],
             max_retries=max_retries,
+            timeout=task_config.get("timeout", 300),
             alert_manager=self.alert_manager
         )
         result = wrapped_func.execute()
