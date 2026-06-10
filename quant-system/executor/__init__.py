@@ -6,7 +6,7 @@ from .position_calc import PositionCalculator
 from .order_manager import OrderManager
 from .trade_log import TradeLogger
 from .rebalance import Rebalancer
-from .broker import BaseBroker, SimulatedBroker
+from .broker import BaseBroker, SimulatedBroker, EasyTraderBroker, create_broker
 from .pnl_calc import (
     PnLCalculator,
     TradePnL,
@@ -23,6 +23,8 @@ __all__ = [
     "Rebalancer",
     "BaseBroker",
     "SimulatedBroker",
+    "EasyTraderBroker",
+    "create_broker",
     "PnLCalculator",
     "TradePnL",
     "PositionPnL",

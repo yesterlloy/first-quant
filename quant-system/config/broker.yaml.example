@@ -1,0 +1,45 @@
+# 券商配置示例文件
+# 复制此文件为 broker.yaml 并填写真实信息
+
+# Broker类型:
+#   simulator - 模拟盘（默认，无真实交易）
+#   ths       - 东方财富
+#   ht        - 华泰证券
+#   xq/xueqiu - 雪球
+#   yh        - 银河证券
+
+broker:
+  type: "simulator"          # simulator / easytrader / ths / ht / xq / yh
+
+  # EasyTrader配置（实盘交易时使用）
+  easytrader:
+    broker_subtype: "ths"    # 券商子类型
+    config_path: ""          # EasyTrader配置文件路径
+    username: ""             # 账户名
+    password: ""             # 密码
+    comm_password: ""        # 通讯密码（如需要）
+
+  # 交易参数
+  trading:
+    # 是否开启模拟模式（即使配置了实盘也不发送真实订单）
+    simulation_mode: true
+
+    # 最大单次下单金额（元）
+    max_order_amount: 100000
+
+    # 最大持仓股票数
+    max_positions: 20
+
+    # 单只股票最大仓位比例（0-1）
+    max_position_ratio: 0.15
+
+  # 风控参数
+  risk_control:
+    # 单日最大亏损比例（0-1）
+    max_daily_loss_ratio: 0.05
+
+    # 单只股票最大止损比例（0-1）
+    max_single_stop_loss: 0.10
+
+    # 是否开启自动止损
+    enable_auto_stop_loss: true
