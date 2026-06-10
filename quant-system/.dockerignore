@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 数据文件（通过volume挂载）
+data/db/
+data/cache/
+data/backup/
+*.duckdb
+
+# 缓存与日志
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# 测试
+.pytest_cache/
+tests/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 配置文件中的敏感信息（通过volume挂载）
+config/broker.yaml
+!config/*.yaml.example
+
+# uv缓存
+.uv/
+venv/

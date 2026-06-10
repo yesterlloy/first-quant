@@ -1,22 +1,67 @@
+version: '3.8'
+
 services:
-  quant-app:
+  # 统一门户Dashboard - 包含所有5个看板
+  dashboard:
     build: .
+    container_name: quant-dashboard
+    restart: unless-stopped
     volumes:
       - ./data/db:/app/data/db
       - ./data/cache:/app/data/cache
+      - ./data/backup:/app/data/backup
       - ./config:/app/config
     ports:
-      - "8050:8050"
+      - "8050:8050"  # 策略回测
+      - "8051:8051"  # 因子分析
+      - "8052:8052"  # ML模型
+      - "8053:8053"  # 实盘监控
+      - "8055:8055"  # 统一门户
     environment:
       - TZ=Asia/Shanghai
-    command: python scripts/run_dashboard.py
+      - PYTHONUNBUFFERED=1
+    command: python scripts/run_all_dashboards.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8055"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  collector:
+  # 定时任务调度器
+  scheduler:
     build: .
+    container_name: quant-scheduler
+    restart: unless-stopped
     volumes:
       - ./data/db:/app/data/db
       - ./data/cache:/app/data/cache
+      - ./data/backup:/app/data/backup
       - ./config:/app/config
     environment:
       - TZ=Asia/Shanghai
-    command: python scripts/run_collector.py
+      - PYTHONUNBUFFERED=1
+    command: python scripts/run_scheduler.py start
+    depends_on:
+      - dashboard
+
+  # 数据采集服务（可选，手动运行更灵活）
+  # collector:
+  #   build: .
+  #   container_name: quant-collector
+  #   volumes:
+  #     - ./data/db:/app/data/db
+  #     - ./data/cache:/app/data/cache
+  #     - ./config:/app/config
+  #   environment:
+  #     - TZ=Asia/Shanghai
+  #   command: python scripts/run_collector.py
+
+volumes:
+  db-data:
+  cache-data:
+  backup-data:
+
+networks:
+  default:
+    name: quant-network
