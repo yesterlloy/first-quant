@@ -11,6 +11,7 @@ from .tasks import (
     monthly_rebalance_task,
     daily_report_task,
     data_validation_task,
+    db_backup_task,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "monthly_rebalance_task",
     "daily_report_task",
     "data_validation_task",
+    "db_backup_task",
 ]

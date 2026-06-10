@@ -134,3 +134,29 @@ def data_validation_task(db):
     except Exception as e:
         logger.error(f"Data validation failed: {e}")
         raise
+
+
+def db_backup_task(db):
+    """数据库备份任务"""
+    logger.info("Starting database backup task...")
+
+    try:
+        sys.path.insert(0, ".")
+        from utils.db_backup import backup_scheduler_job
+
+        # 获取数据库路径
+        db_path = getattr(db, 'db_path', 'data/db/quant.duckdb')
+
+        # 执行备份
+        result = backup_scheduler_job(db_path)
+
+        if result["success"]:
+            logger.info(f"Database backup completed: {result['size_mb']:.2f} MB")
+        else:
+            logger.error(f"Database backup failed: {result.get('error', 'Unknown error')}")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Database backup task failed: {e}")
+        raise

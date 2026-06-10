@@ -13,7 +13,8 @@ def run_scheduler(args):
         factor_compute_task,
         monthly_rebalance_task,
         daily_report_task,
-        data_validation_task
+        data_validation_task,
+        db_backup_task
     )
     from risk import AlertManager
 
@@ -81,6 +82,16 @@ def run_scheduler(args):
             retry=tasks_config["data_validation"].get("retry", False)
         )
 
+    # Database backup (daily)
+    if tasks_config.get("db_backup", {}).get("enabled", True):
+        scheduler.register_task(
+            "db_backup",
+            lambda: db_backup_task(db),
+            cron=tasks_config["db_backup"].get("cron", "0 23 * * *"),
+            timeout=tasks_config["db_backup"].get("timeout", 300),
+            retry=tasks_config["db_backup"].get("retry", False)
+        )
+
     logger.info("Scheduler configured. Press Ctrl+C to stop.")
     scheduler.start()
 
@@ -96,7 +107,8 @@ def trigger_task(args):
         factor_compute_task,
         monthly_rebalance_task,
         daily_report_task,
-        data_validation_task
+        data_validation_task,
+        db_backup_task
     )
 
     db = DuckDBManager()
