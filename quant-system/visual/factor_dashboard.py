@@ -40,8 +40,8 @@ class FactorDashboard:
         self._bind_callbacks()
 
     def _get_db(self) -> DuckDBManager:
-        """获取临时DB连接"""
-        return DuckDBManager(self.db_path)
+        """获取临时DB连接（只读模式）"""
+        return DuckDBManager(self.db_path, read_only=True)
 
     def _build_layout(self):
         """构建页面布局"""

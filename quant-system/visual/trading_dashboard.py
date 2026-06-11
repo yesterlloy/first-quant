@@ -20,7 +20,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         config = yaml.safe_load(f)
 
     app = dash.Dash(__name__, title="交易风控监控")
-    db = DuckDBManager(config["data"]["db_path"])
+    db_path = config["data"]["db_path"]
 
     app.layout = html.Div([
         html.H1("交易风控监控面板", style={"textAlign": "center", "color": "#2c3e50"}),
@@ -93,8 +93,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         [dash.dependencies.Input("interval-component", "n_intervals")]
     )
     def update_dashboard(n):
-        db.connect()
-        try:
+        with DuckDBManager(db_path, read_only=True) as db:
             # 1. 组合概览卡片
             cards = _create_portfolio_cards(db)
 
@@ -125,8 +124,6 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
             empty_fig = go.Figure()
             empty_fig.update_layout(title="暂无数据")
             return html.P(f"错误: {e}"), empty_fig, empty_fig, html.P("暂无数据"), html.P("暂无数据"), html.P("暂无数据"), html.P("暂无数据")
-        finally:
-            db.close()
 
     return app
 

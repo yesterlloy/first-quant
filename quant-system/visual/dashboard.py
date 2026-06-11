@@ -24,7 +24,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         config = yaml.safe_load(f)
 
     app = dash.Dash(__name__, title="A股量化系统")
-    db = DuckDBManager(config["data"]["db_path"])
+    db = DuckDBManager(config["data"]["db_path"], read_only=True)
 
     # 布局
     app.layout = html.Div([
@@ -64,8 +64,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         ]
     )
     def update_dashboard():
-        db.connect()
-        try:
+        with DuckDBManager(db_path, read_only=True) as db:
             # 数据概览
             coverage = db.get_data_coverage()
             overview = html.Div([
@@ -113,12 +112,9 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
 
         except Exception as e:
             logger.error(f"Dashboard error: {e}")
-            db.close()
             empty = go.Figure()
             empty.update_layout(title=f"错误: {e}")
             return html.P(f"错误: {e}"), empty, empty, empty
-        finally:
-            db.close()
 
     return app
 

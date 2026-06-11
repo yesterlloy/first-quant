@@ -120,14 +120,10 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
 def _render_home_page() -> html.Div:
     """渲染首页概览页面"""
     try:
-        db = DuckDBManager()
-        db.connect()
-        pnl_calc = PnLCalculator(db)
-
-        # 获取系统状态数据
-        system_status = _get_system_status(db, pnl_calc)
-
-        db.close()
+        with DuckDBManager(read_only=True) as db:
+            pnl_calc = PnLCalculator(db)
+            # 获取系统状态数据
+            system_status = _get_system_status(db, pnl_calc)
     except Exception as e:
         logger.error(f"Failed to load home page data: {e}")
         system_status = {}

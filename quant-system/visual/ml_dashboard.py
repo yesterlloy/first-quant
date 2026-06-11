@@ -31,7 +31,7 @@ class MLDashboard:
         self._bind_callbacks()
 
     def _get_db(self):
-        return DuckDBManager(self.db_path)
+        return DuckDBManager(self.db_path, read_only=True)
 
     def _build_layout(self):
         self.app.layout = html.Div(className="container-fluid p-4", children=[
