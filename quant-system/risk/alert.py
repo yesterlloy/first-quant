@@ -241,8 +241,11 @@ class AlertManager:
         self.alert("error", title, message, context)
 
     @classmethod
-    def from_config(cls, config: dict) -> 'AlertManager':
+    def from_config(cls, config) -> 'AlertManager':
         """从配置创建AlertManager
+
+        Args:
+            config: dict 配置字典 或 str 配置文件路径
 
         config格式:
         {
@@ -254,6 +257,14 @@ class AlertManager:
             }
         }
         """
+        import yaml
+        from pathlib import Path
+
+        # 如果是字符串路径，加载文件
+        if isinstance(config, (str, Path)):
+            with open(config, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+
         am = cls(dedup_window_seconds=config.get("dedup_window_seconds", 60))
 
         channels_config = config.get("channels", {})

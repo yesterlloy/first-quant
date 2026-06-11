@@ -50,10 +50,15 @@ def run_single_dashboard(dashboard_info, wait: bool = False):
 
     logger.info(f"Starting {dashboard_info['name']} on port {dashboard_info['port']}...")
 
+    # 设置PYTHONPATH，确保子进程能找到模块
+    import os
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(__file__).parent.parent)
+
     if wait:
-        subprocess.run(cmd, cwd=str(Path(__file__).parent.parent))
+        subprocess.run(cmd, cwd=str(Path(__file__).parent.parent), env=env)
     else:
-        subprocess.Popen(cmd, cwd=str(Path(__file__).parent.parent))
+        subprocess.Popen(cmd, cwd=str(Path(__file__).parent.parent), env=env)
 
 
 def run_all():
