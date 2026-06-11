@@ -8,15 +8,25 @@ from loguru import logger
 class DuckDBManager:
     """DuckDB 数据库封装，提供读写接口"""
 
-    def __init__(self, db_path: str = "data/db/quant.duckdb"):
+    def __init__(self, db_path: str = "data/db/quant.duckdb", read_only: bool = False):
         self.db_path = db_path
+        self.read_only = read_only
         self.conn = None
 
     def connect(self):
-        """建立数据库连接"""
-        self.conn = duckdb.connect(self.db_path)
-        self._create_tables()
-        logger.info(f"DuckDB connected: {self.db_path}")
+        """建立数据库连接
+
+        read_only=True: 只读模式，支持多进程并发读取
+        read_only=False: 读写模式，写操作需要独占锁
+        """
+        config = {"access_mode": "READ_ONLY"} if self.read_only else {}
+        self.conn = duckdb.connect(self.db_path, config=config)
+
+        if not self.read_only:
+            self._create_tables()
+
+        mode_info = " (READ_ONLY)" if self.read_only else ""
+        logger.info(f"DuckDB connected: {self.db_path}{mode_info}")
         return self
 
     def close(self):

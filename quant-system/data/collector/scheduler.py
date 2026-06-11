@@ -54,13 +54,20 @@ class CollectorScheduler:
             coverage = self.db.get_data_coverage()
             start = coverage["max_date"] if coverage["max_date"] != "N/A" else self.start_date
 
-            daily_df = self.collector.get_daily_quote_batch(codes, start, self.end_date)
+            # 统一日期格式: YYYY-MM-DD -> YYYYMMDD
+            if len(start) == 10 and start[4] == '-':
+                start = start.replace('-', '')
+            end = self.end_date
+            if len(end) == 10 and end[4] == '-':
+                end = end.replace('-', '')
+
+            daily_df = self.collector.get_daily_quote_batch(codes, start, end)
             if not daily_df.empty:
                 self.db.upsert_daily_quote(daily_df)
 
             # 3. 采集指数行情
             for idx_code in self.config["data"]["indices"]:
-                idx_df = self.collector.get_index_quote(idx_code, start, self.end_date)
+                idx_df = self.collector.get_index_quote(idx_code, start, end)
                 if not idx_df.empty:
                     self.db.upsert_index_quote(idx_df)
 
@@ -86,19 +93,25 @@ class CollectorScheduler:
 
             self.db.upsert_stock_info(stock_list)
 
-            # 2. 全量日线行情
+            # 2. 全量日线行情 - 确保日期格式正确
             codes = stock_list["code"].tolist()
             logger.info(f"Collecting daily quotes for {len(codes)} stocks...")
 
-            daily_df = self.collector.get_daily_quote_batch(
-                codes, self.start_date, self.end_date
-            )
+            # 统一日期格式: YYYY-MM-DD -> YYYYMMDD
+            start = self.start_date
+            if len(start) == 10 and start[4] == '-':
+                start = start.replace('-', '')
+            end = self.end_date
+            if len(end) == 10 and end[4] == '-':
+                end = end.replace('-', '')
+
+            daily_df = self.collector.get_daily_quote_batch(codes, start, end)
             if not daily_df.empty:
                 self.db.upsert_daily_quote(daily_df)
 
             # 3. 指数行情
             for idx_code in self.config["data"]["indices"]:
-                idx_df = self.collector.get_index_quote(idx_code, self.start_date, self.end_date)
+                idx_df = self.collector.get_index_quote(idx_code, start, end)
                 if not idx_df.empty:
                     self.db.upsert_index_quote(idx_df)
 
