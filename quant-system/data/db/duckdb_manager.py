@@ -19,7 +19,21 @@ class DuckDBManager:
         read_only=True: 只读模式，支持多进程并发读取
         read_only=False: 读写模式，写操作需要独占锁
         """
-        config = {"access_mode": "READ_ONLY"} if self.read_only else {}
+        if self.read_only:
+            # 只读模式：优化配置以支持高并发
+            config = {
+                "access_mode": "READ_ONLY",
+                "threads": 1,  # 单线程减少竞争
+                "max_memory": "512MB",
+                "enable_external_access": "false",
+            }
+        else:
+            # 读写模式：标准配置
+            config = {
+                "threads": 1,
+                "max_memory": "512MB",
+            }
+
         self.conn = duckdb.connect(self.db_path, config=config)
 
         if not self.read_only:

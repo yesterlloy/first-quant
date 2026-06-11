@@ -24,7 +24,8 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         config = yaml.safe_load(f)
 
     app = dash.Dash(__name__, title="A股量化系统")
-    db = DuckDBManager(config["data"]["db_path"], read_only=True)
+    db_path = config["data"]["db_path"]
+    bt_cfg = config["backtest"]
 
     # 布局
     app.layout = html.Div([
@@ -64,51 +65,51 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         ]
     )
     def update_dashboard():
-        with DuckDBManager(db_path, read_only=True) as db:
-            # 数据概览
-            coverage = db.get_data_coverage()
-            overview = html.Div([
-                html.P(f"股票数量: {coverage['stocks']}"),
-                html.P(f"数据范围: {coverage['min_date']} ~ {coverage['max_date']}"),
-            ])
+        try:
+            with DuckDBManager(db_path, read_only=True) as db:
+                # 数据概览
+                coverage = db.get_data_coverage()
+                overview = html.Div([
+                    html.P(f"股票数量: {coverage['stocks']}"),
+                    html.P(f"数据范围: {coverage['min_date']} ~ {coverage['max_date']}"),
+                ])
 
-            # 回测
-            # 用沪深300成分示例（或全市场）
-            # 先简单用一只股票演示
-            sample_code = "000001"  # 平安银行
-            df = db.get_daily_quote(code=sample_code)
+                # 回测
+                # 用沪深300成分示例（或全市场）
+                # 先简单用一只股票演示
+                sample_code = "000001"  # 平安银行
+                df = db.get_daily_quote(code=sample_code)
 
-            if df.empty:
-                empty_fig = go.Figure()
-                empty_fig.update_layout(title="暂无数据，请先运行数据采集")
-                return overview, empty_fig, empty_fig, empty_fig
+                if df.empty:
+                    empty_fig = go.Figure()
+                    empty_fig.update_layout(title="暂无数据，请先运行数据采集")
+                    return overview, empty_fig, empty_fig, empty_fig
 
-            # 跑三个策略
-            strategies = [
-                MACrossStrategy(short_window=5, long_window=20),
-                MomentumStrategy(lookback=20, buy_threshold=0.05),
-                MeanRevertStrategy(lookback=20, entry_z=2.0),
-            ]
+                # 跑三个策略
+                strategies = [
+                    MACrossStrategy(short_window=5, long_window=20),
+                    MomentumStrategy(lookback=20, buy_threshold=0.05),
+                    MeanRevertStrategy(lookback=20, entry_z=2.0),
+                ]
 
-            bt_cfg = config["backtest"]
-            engine = BacktestEngine(
-                initial_capital=bt_cfg["initial_capital"],
-                commission=bt_cfg["commission"],
-                slippage=bt_cfg["slippage"],
-            )
+                engine = BacktestEngine(
+                    initial_capital=bt_cfg["initial_capital"],
+                    commission=bt_cfg["commission"],
+                    slippage=bt_cfg["slippage"],
+                )
 
-            results = engine.run_multi(strategies, df)
+                results = engine.run_multi(strategies, df)
 
-            # 指标表格
-            metrics_fig = plot_metrics_table(results)
+                # 指标表格
+                metrics_fig = plot_metrics_table(results)
 
-            # 收益曲线
-            equity_fig = plot_strategy_comparison(results)
+                # 收益曲线
+                equity_fig = plot_strategy_comparison(results)
 
-            # 回撤（用第一个策略）
-            dd_fig = plot_drawdown(results[0]["returns"], title=f"{results[0]['strategy_name']} 回撤")
+                # 回撤（用第一个策略）
+                dd_fig = plot_drawdown(results[0]["returns"], title=f"{results[0]['strategy_name']} 回撤")
 
-            return overview, metrics_fig, equity_fig, dd_fig
+                return overview, metrics_fig, equity_fig, dd_fig
 
         except Exception as e:
             logger.error(f"Dashboard error: {e}")

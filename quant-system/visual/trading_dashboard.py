@@ -93,29 +93,30 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
         [dash.dependencies.Input("interval-component", "n_intervals")]
     )
     def update_dashboard(n):
-        with DuckDBManager(db_path, read_only=True) as db:
-            # 1. 组合概览卡片
-            cards = _create_portfolio_cards(db)
+        try:
+            with DuckDBManager(db_path, read_only=True) as db:
+                # 1. 组合概览卡片
+                cards = _create_portfolio_cards(db)
 
-            # 2. 收益曲线
-            equity_fig = _plot_equity_curve(db)
+                # 2. 收益曲线
+                equity_fig = _plot_equity_curve(db)
 
-            # 3. 行业分布
-            industry_fig = _plot_industry_distribution(db)
+                # 3. 行业分布
+                industry_fig = _plot_industry_distribution(db)
 
-            # 4. 持仓表格
-            positions_table = _create_positions_table(db)
+                # 4. 持仓表格
+                positions_table = _create_positions_table(db)
 
-            # 5. 交易记录
-            trades_table = _create_trades_table(db)
+                # 5. 交易记录
+                trades_table = _create_trades_table(db)
 
-            # 6. 风控事件
-            risk_events = _create_risk_events_table(db)
+                # 6. 风控事件
+                risk_events = _create_risk_events_table(db)
 
-            # 7. 订单表格
-            orders_table = _create_orders_table(db)
+                # 7. 订单表格
+                orders_table = _create_orders_table(db)
 
-            return cards, equity_fig, industry_fig, positions_table, trades_table, risk_events, orders_table
+                return cards, equity_fig, industry_fig, positions_table, trades_table, risk_events, orders_table
 
         except Exception as e:
             logger.error(f"Trading dashboard error: {e}")

@@ -128,12 +128,22 @@ class TaskWrapper:
 
     def _execute_with_timeout(self, *args, **kwargs):
         """带超时控制的任务执行"""
+        import inspect
+
         result_container = []
         exception_container = []
 
         def target():
             try:
-                result_container.append(self.func(*args, **kwargs))
+                # 智能判断：检查函数签名
+                sig = inspect.signature(self.func)
+                params = list(sig.parameters.keys())
+
+                # 如果函数接受参数，传递db；否则直接调用
+                if len(params) > 0:
+                    result_container.append(self.func(self.db, *args, **kwargs))
+                else:
+                    result_container.append(self.func(*args, **kwargs))
             except Exception as e:
                 exception_container.append(e)
 
