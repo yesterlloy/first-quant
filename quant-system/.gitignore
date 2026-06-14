@@ -9,6 +9,7 @@ build/
 data/db/*.duckdb
 data/db/*.wal
 data/cache/*.csv
+data/backup
 
 # Logs
 logs/
