@@ -6,7 +6,7 @@ from dash import dcc, html
 import plotly.graph_objects as go
 from loguru import logger
 
-from data.db.duckdb_manager import DuckDBManager
+from data.db import DBManager
 from strategy.ma_cross import MACrossStrategy
 from strategy.momentum import MomentumStrategy
 from strategy.mean_revert import MeanRevertStrategy
@@ -66,7 +66,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
     )
     def update_dashboard():
         try:
-            with DuckDBManager(db_path, read_only=True) as db:
+            with DBManager(db_path, read_only=True) as db:
                 # 数据概览
                 coverage = db.get_data_coverage()
                 overview = html.Div([

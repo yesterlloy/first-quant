@@ -1,12 +1,12 @@
 """ML训练/预测看板"""
 
 import dash
-from dash import dcc, html, dash_table
+from dash import dcc, html, dash_table, Input, Output
 import plotly.express as px
 import pandas as pd
 import yaml
 from loguru import logger
-from data.db.duckdb_manager import DuckDBManager
+from data.db import DBManager
 
 
 class MLDashboard:
@@ -31,7 +31,7 @@ class MLDashboard:
         self._bind_callbacks()
 
     def _get_db(self):
-        return DuckDBManager(self.db_path, read_only=True)
+        return DBManager(self.db_path, read_only=True)
 
     def _build_layout(self):
         self.app.layout = html.Div(className="container-fluid p-4", children=[
@@ -147,4 +147,9 @@ class MLDashboard:
 
     def run(self, port=8052, host="0.0.0.0"):
         logger.info(f"ML Dashboard starting on {host}:{port}")
-        self.app.run_server(host=host, port=port, debug=False)
+        self.app.run(host=host, port=port, debug=False)
+
+
+if __name__ == "__main__":
+    dashboard = MLDashboard()
+    dashboard.run()

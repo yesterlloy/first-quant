@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 from loguru import logger
 from datetime import datetime
 
-from data.db.duckdb_manager import DuckDBManager
+from data.db import DBManager
 from executor.pnl_calc import PnLCalculator
 
 
@@ -94,7 +94,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
     )
     def update_dashboard(n):
         try:
-            with DuckDBManager(db_path, read_only=True) as db:
+            with DBManager(db_path, read_only=True) as db:
                 # 1. 组合概览卡片
                 cards = _create_portfolio_cards(db)
 
@@ -129,7 +129,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
     return app
 
 
-def _create_portfolio_cards(db: DuckDBManager) -> list:
+def _create_portfolio_cards(db) -> list:
     """创建组合概览卡片（使用真实PnL计算）"""
     pnl_calc = PnLCalculator(db)
 
@@ -207,7 +207,7 @@ def _card(title: str, value: str, color: str) -> html.Div:
     })
 
 
-def _calculate_daily_return(db: DuckDBManager, pnl_calc: PnLCalculator, current_date) -> tuple:
+def _calculate_daily_return(db, pnl_calc: PnLCalculator, current_date) -> tuple:
     """计算今日收益"""
     try:
         # 获取前一个交易日的市值
@@ -248,7 +248,7 @@ def _calculate_daily_return(db: DuckDBManager, pnl_calc: PnLCalculator, current_
         return None, None
 
 
-def _plot_equity_curve(db: DuckDBManager) -> go.Figure:
+def _plot_equity_curve(db) -> go.Figure:
     """绘制收益曲线（带回撤）"""
     pnl_calc = PnLCalculator(db)
 
@@ -333,7 +333,7 @@ def _plot_equity_curve(db: DuckDBManager) -> go.Figure:
         return fig
 
 
-def _plot_industry_distribution(db: DuckDBManager) -> go.Figure:
+def _plot_industry_distribution(db) -> go.Figure:
     """绘制行业分布饼图"""
     try:
         positions = db.query("SELECT * FROM position_log WHERE date = (SELECT MAX(date) FROM position_log)")
@@ -366,7 +366,7 @@ def _plot_industry_distribution(db: DuckDBManager) -> go.Figure:
     return fig
 
 
-def _create_positions_table(db: DuckDBManager) -> dash_table.DataTable:
+def _create_positions_table(db) -> dash_table.DataTable:
     """创建持仓表格（含盈亏信息）"""
     pnl_calc = PnLCalculator(db)
 
@@ -437,7 +437,7 @@ def _create_positions_table(db: DuckDBManager) -> dash_table.DataTable:
         return html.P(f"数据加载错误: {e}", style={"textAlign": "center", "color": "#e74c3c"})
 
 
-def _create_trades_table(db: DuckDBManager) -> dash_table.DataTable:
+def _create_trades_table(db) -> dash_table.DataTable:
     """创建交易记录表格"""
     try:
         trades = db.query("SELECT * FROM trade_log ORDER BY date DESC LIMIT 20")
@@ -464,7 +464,7 @@ def _create_trades_table(db: DuckDBManager) -> dash_table.DataTable:
     )
 
 
-def _create_risk_events_table(db: DuckDBManager) -> dash_table.DataTable:
+def _create_risk_events_table(db) -> dash_table.DataTable:
     """创建风控事件表格"""
     try:
         events = db.query("SELECT * FROM risk_event_log ORDER BY date DESC LIMIT 20")
@@ -491,7 +491,7 @@ def _create_risk_events_table(db: DuckDBManager) -> dash_table.DataTable:
     )
 
 
-def _create_orders_table(db: DuckDBManager) -> dash_table.DataTable:
+def _create_orders_table(db) -> dash_table.DataTable:
     """创建订单状态表格"""
     try:
         orders = db.query("SELECT * FROM order_log ORDER BY date DESC LIMIT 20")

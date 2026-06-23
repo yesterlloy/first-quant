@@ -8,7 +8,7 @@ import plotly.express as px
 import pandas as pd
 import yaml
 from loguru import logger
-from data.db.duckdb_manager import DuckDBManager
+from data.db import DBManager
 from factor.registry import FactorRegistry, auto_register
 
 
@@ -39,9 +39,9 @@ class FactorDashboard:
         self._build_layout()
         self._bind_callbacks()
 
-    def _get_db(self) -> DuckDBManager:
+    def _get_db(self):
         """获取临时DB连接（只读模式）"""
-        return DuckDBManager(self.db_path, read_only=True)
+        return DBManager(self.db_path, read_only=True)
 
     def _build_layout(self):
         """构建页面布局"""
@@ -114,7 +114,7 @@ class FactorDashboard:
             finally:
                 db.close()
 
-    def _render_overview(self, db: DuckDBManager):
+    def _render_overview(self, db: DBManager):
         """因子概览表"""
         try:
             # 尝试从 factor_value 表获取汇总
@@ -160,7 +160,7 @@ class FactorDashboard:
         except Exception as e:
             return html.P(f"数据查询失败: {e}", className="text-danger")
 
-    def _render_ic_heatmap(self, db: DuckDBManager, factor: str):
+    def _render_ic_heatmap(self, db: DBManager, factor: str):
         """IC热力图"""
         try:
             ic_df = db.query(f"""
@@ -184,7 +184,7 @@ class FactorDashboard:
         except Exception as e:
             return html.P(f"IC热力图渲染失败: {e}", className="text-danger")
 
-    def _render_layer_chart(self, db: DuckDBManager, factor: str):
+    def _render_layer_chart(self, db: DBManager, factor: str):
         """分层收益图"""
         try:
             # 尝试读取分层回测结果
@@ -209,11 +209,11 @@ class FactorDashboard:
         except Exception as e:
             return html.P(f"分层收益图渲染失败: {e}", className="text-danger")
 
-    def _render_decay(self, db: DuckDBManager, factor: str):
+    def _render_decay(self, db: DBManager, factor: str):
         """衰减曲线"""
         return html.P("衰减曲线需要跑完 decay_test 后显示", className="text-muted")
 
-    def _render_screening(self, db: DuckDBManager):
+    def _render_screening(self, db: DBManager):
         """筛选结果"""
         try:
             import os
@@ -243,4 +243,9 @@ class FactorDashboard:
     def run(self, port: int = 8051, host: str = "0.0.0.0"):
         """启动 Dashboard"""
         logger.info(f"Factor Dashboard starting on {host}:{port}")
-        self.app.run_server(host=host, port=port, debug=False)
+        self.app.run(host=host, port=port, debug=False)
+
+
+if __name__ == "__main__":
+    dashboard = FactorDashboard()
+    dashboard.run()

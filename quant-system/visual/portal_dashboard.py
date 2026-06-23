@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from loguru import logger
 from datetime import datetime
 
-from data.db.duckdb_manager import DuckDBManager
+from data.db import DBManager
 from executor.pnl_calc import PnLCalculator
 
 
@@ -120,7 +120,7 @@ def create_app(config_path: str = "config/settings.yaml") -> dash.Dash:
 def _render_home_page() -> html.Div:
     """渲染首页概览页面"""
     try:
-        with DuckDBManager(read_only=True) as db:
+        with DBManager(read_only=True) as db:
             pnl_calc = PnLCalculator(db)
             # 获取系统状态数据
             system_status = _get_system_status(db, pnl_calc)
@@ -390,7 +390,7 @@ def _render_dashboard_iframe(page_name: str) -> html.Div:
     ])
 
 
-def _get_system_status(db: DuckDBManager, pnl_calc: PnLCalculator) -> dict:
+def _get_system_status(db, pnl_calc: PnLCalculator) -> dict:
     """获取系统状态数据"""
     status = {}
 

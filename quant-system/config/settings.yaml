@@ -8,7 +8,8 @@ data:
   end_date: "20261231"    # 到当前
 
   # 数据库配置（相对路径，本地和Docker通用）
-  db_path: "data/db/quant.duckdb"
+  # SQLite 默认：支持多进程并发读，解决dashboard锁冲突
+  db_path: "data/db/quant.sqlite.db"
   cache_path: "data/cache"
 
   # 指数列表

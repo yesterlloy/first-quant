@@ -75,6 +75,8 @@ def run_all():
     # 最后启动主门户
     logger.info(f"\n等待子Dashboard启动...")
     time.sleep(3)
+    run_single_dashboard(DASHBOARDS[-1], wait=False)
+    time.sleep(2)
     logger.info("\n" + "=" * 60)
     logger.info("🚀 所有Dashboard启动完成！")
     logger.info("=" * 60)
