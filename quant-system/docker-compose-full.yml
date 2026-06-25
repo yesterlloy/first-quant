@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # 后端 API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quant-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/db/quant.sqlite.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=quant-platform-super-secret-key-2024
+      - DEBUG=false
+    volumes:
+      - ./data:/app/data:rw
+    depends_on:
+      - redis
+    networks:
+      - quant-network
+
+  # 前端 Web
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: quant-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - quant-network
+
+  # Redis 缓存 + 任务队列
+  redis:
+    image: redis:7-alpine
+    container_name: quant-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - quant-network
+
+  # Celery Worker - 回测任务
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quant-celery-worker
+    restart: unless-stopped
+    command: celery -A app.core.celery worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=sqlite:////app/data/db/quant.sqlite.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - ./data:/app/data:rw
+    depends_on:
+      - redis
+    networks:
+      - quant-network
+
+networks:
+  quant-network:
+    driver: bridge
+
+volumes:
+  redis_data:
