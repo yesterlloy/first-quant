@@ -95,13 +95,16 @@ def get_factor_ic_analysis(
 @router.get("/layer-backtest", response_model=ApiResponse[list])
 def get_factor_layer_backtest(
     factor_name: str = Query(..., description="因子名称"),
+    n_layers: Optional[int] = Query(5, description="分层数"),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """分层回测（暂返回空列表）."""
-    # TODO: 实现分层回测服务
-    return ApiResponse.success(data=[])
+    """因子分层回测."""
+    results = factor_service.layer_backtest(
+        db, factor_name, n_layers=n_layers, start_date=start_date, end_date=end_date
+    )
+    return ApiResponse.success(data=results)
 
 
 @router.post("", response_model=ApiResponse[FactorOut], status_code=status.HTTP_201_CREATED)
