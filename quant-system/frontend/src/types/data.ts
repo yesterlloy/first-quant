@@ -165,3 +165,140 @@ export interface BacktestResult {
     amount: number;
   }>;
 }
+
+// ============ 交易相关类型 ============
+
+/** 持仓信息 */
+export interface PositionOut {
+  id: number;
+  date: string;
+  code: string;
+  shares?: number;
+  weight?: number;
+  cost_price?: number;
+  current_price?: number;
+  market_value?: number;
+  profit_pct?: number;
+  profit_amount?: number;
+}
+
+/** 订单信息 */
+export interface OrderOut {
+  id: number;
+  order_id: string;
+  date: string;
+  code: string;
+  action: 'buy' | 'sell';
+  shares: number;
+  price?: number;
+  status: 'pending' | 'filled' | 'canceled' | 'rejected';
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 成交记录 */
+export interface TradeOut {
+  id: number;
+  trade_id: string;
+  order_id?: string;
+  date: string;
+  code: string;
+  action: 'buy' | 'sell';
+  shares: number;
+  price: number;
+  filled_at?: string;
+  amount?: number;
+}
+
+/** 账户快照 */
+export interface AccountSnapshotOut {
+  id: number;
+  date: string;
+  total_value?: number;
+  cash?: number;
+  market_value?: number;
+  return_pct?: number;
+  created_at?: string;
+}
+
+/** 组合概览 */
+export interface PortfolioSummaryOut {
+  total_value: number;
+  cash: number;
+  market_value: number;
+  position_count: number;
+  today_pnl: number;
+  today_return_pct: number;
+  total_return_pct: number;
+  max_drawdown_pct: number;
+  sharpe_ratio: number;
+}
+
+/** 交易统计 */
+export interface TradingStatsOut {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  total_profit: number;
+  avg_profit_per_trade: number;
+  max_consecutive_wins: number;
+  max_consecutive_losses: number;
+}
+
+// ============ ML 模型相关类型 ============
+
+/** 模型信息 */
+export interface MLModelInfo {
+  name: string;
+  display_name: string;
+  description: string;
+  type: string;
+  supported_params: string[];
+}
+
+/** 训练任务 */
+export interface MLTrainTask {
+  id: number;
+  model_name: string;
+  status: 'pending' | 'running' | 'success' | 'failed';
+  start_date?: string;
+  end_date?: string;
+  train_start?: string;
+  train_end?: string;
+  val_start?: string;
+  val_end?: string;
+  train_samples?: number;
+  val_samples?: number;
+  train_auc?: number;
+  val_auc?: number;
+  top_return?: number;
+  feature_count?: number;
+  params?: Record<string, any>;
+  model_path?: string;
+  error_message?: string;
+  created_at?: string;
+  started_at?: string;
+  finished_at?: string;
+}
+
+/** 因子重要性 */
+export interface MLFactorImportance {
+  id: number;
+  task_id: number;
+  feature_name: string;
+  importance: number;
+  rank?: number;
+  created_at?: string;
+}
+
+/** 预测信号 */
+export interface MLTimingSignal {
+  id: number;
+  timestamp: string;
+  code: string;
+  model_name: string;
+  signal?: number;
+  probability?: number;
+  prediction?: 'buy' | 'sell' | 'hold';
+}

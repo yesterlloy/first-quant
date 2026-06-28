@@ -13,6 +13,10 @@ import type {
   BacktestTask,
   BacktestResult,
   PaginatedResponse,
+  MLModelInfo,
+  MLTrainTask,
+  MLFactorImportance,
+  MLTimingSignal,
 } from '../types/data';
 
 /**
@@ -169,4 +173,165 @@ export function exportKlineData(code: string, startDate: string, endDate: string
     end_date: endDate,
   });
   window.open(`/api/v1/data/export/kline?${params}`, '_blank');
+}
+
+// ============= 交易相关 =============
+
+/**
+ * 获取当前持仓
+ */
+export function getPositions(date?: string): Promise<PositionOut[]> {
+  return http.get<PositionOut[]>('/trading/positions', { params: { date } });
+}
+
+/**
+ * 获取订单列表
+ */
+export function getOrders(params?: {
+  page?: number;
+  page_size?: number;
+  status?: string;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<PaginatedResponse<OrderOut>> {
+  return http.get<PaginatedResponse<OrderOut>>('/trading/orders', { params });
+}
+
+/**
+ * 获取订单详情
+ */
+export function getOrderDetail(orderId: number): Promise<OrderOut> {
+  return http.get<OrderOut>(`/trading/orders/${orderId}`);
+}
+
+/**
+ * 创建订单
+ */
+export function createOrder(code: string, action: string, shares: number, price?: number): Promise<OrderOut> {
+  return http.post<OrderOut>('/trading/orders', { code, action, shares, price });
+}
+
+/**
+ * 取消订单
+ */
+export function cancelOrder(orderId: number): Promise<OrderOut> {
+  return http.post<OrderOut>(`/trading/orders/${orderId}/cancel`);
+}
+
+/**
+ * 获取成交记录
+ */
+export function getTrades(params?: {
+  page?: number;
+  page_size?: number;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<PaginatedResponse<TradeOut>> {
+  return http.get<PaginatedResponse<TradeOut>>('/trading/trades', { params });
+}
+
+/**
+ * 获取账户快照
+ */
+export function getAccountSnapshots(params?: {
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}): Promise<AccountSnapshotOut[]> {
+  return http.get<AccountSnapshotOut[]>('/trading/account/snapshots', { params });
+}
+
+/**
+ * 获取组合概览
+ */
+export function getPortfolioSummary(): Promise<PortfolioSummaryOut> {
+  return http.get<PortfolioSummaryOut>('/trading/portfolio/summary');
+}
+
+/**
+ * 获取交易统计
+ */
+export function getTradingStats(params?: {}): Promise<TradingStatsOut> {
+  return http.get<TradingStatsOut>('/trading/stats', { params });
+}
+
+// ============= ML 模型相关 =============
+
+/**
+ * 获取支持的模型列表
+ */
+export function getMLModelList(): Promise<MLModelInfo[]> {
+  return http.get<MLModelInfo[]>('/ml/models');
+}
+
+/**
+ * 获取训练任务列表
+ */
+export function getMLTrainTaskList(params?: {
+  page?: number;
+  page_size?: number;
+  status?: string;
+  model_name?: string;
+}): Promise<PaginatedResponse<MLTrainTask>> {
+  return http.get<PaginatedResponse<MLTrainTask>>('/ml/tasks', { params });
+}
+
+/**
+ * 获取训练任务详情
+ */
+export function getMLTrainTask(taskId: number): Promise<MLTrainTask> {
+  return http.get<MLTrainTask>(`/ml/tasks/${taskId}`);
+}
+
+/**
+ * 提交训练任务
+ */
+export function submitMLTrainTask(params: {
+  model_name: string;
+  start_date?: string;
+  end_date?: string;
+  factors?: string[];
+  params?: Record<string, any>;
+}): Promise<MLTrainTask> {
+  return http.post<MLTrainTask>('/ml/train', params);
+}
+
+/**
+ * 执行训练任务
+ */
+export function runMLTrainTask(taskId: number): Promise<MLTrainTask> {
+  return http.post<MLTrainTask>(`/ml/tasks/${taskId}/run`);
+}
+
+/**
+ * 删除训练任务
+ */
+export function deleteMLTrainTask(taskId: number): Promise<void> {
+  return http.delete<void>(`/ml/tasks/${taskId}`);
+}
+
+/**
+ * 获取因子重要性
+ */
+export function getMLFactorImportance(params?: {
+  task_id?: number;
+  model_name?: string;
+  top_n?: number;
+}): Promise<MLFactorImportance[]> {
+  return http.get<MLFactorImportance[]>('/ml/factor-importance', { params });
+}
+
+/**
+ * 获取预测信号
+ */
+export function getMLSignals(params?: {
+  page?: number;
+  page_size?: number;
+  date?: string;
+  code?: string;
+  model_name?: string;
+}): Promise<PaginatedResponse<MLTimingSignal>> {
+  return http.get<PaginatedResponse<MLTimingSignal>>('/ml/signals', { params });
 }

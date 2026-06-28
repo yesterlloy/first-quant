@@ -5,6 +5,8 @@ import Login from './pages/login';
 import Dashboard from './pages/dashboard';
 import FactorAnalysis from './pages/factor';
 import StrategyBacktest from './pages/backtest';
+import MLModels from './pages/ml';
+import TradingDashboard from './pages/trading';
 import { useUserStore } from './stores/useUserStore';
 
 /**
@@ -51,8 +53,8 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="factor" element={<FactorAnalysis />} />
         <Route path="backtest" element={<StrategyBacktest />} />
-        <Route path="ml" element={<ComingSoon title="ML 模型" />} />
-        <Route path="trading" element={<ComingSoon title="实盘交易" />} />
+        <Route path="ml" element={<MLModels />} />
+        <Route path="trading" element={<TradingDashboard />} />
         <Route path="risk" element={<ComingSoon title="风控中心" />} />
         <Route path="scheduler" element={<ComingSoon title="任务调度" />} />
       </Route>
