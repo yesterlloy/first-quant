@@ -257,6 +257,110 @@ export function getTradingStats(params?: {}): Promise<TradingStatsOut> {
   return http.get<TradingStatsOut>('/trading/stats', { params });
 }
 
+// ============= 风控相关 =============
+
+/**
+ * 获取风控规则列表
+ */
+export function getRiskRules(params?: {
+  page?: number;
+  page_size?: number;
+  level?: string;
+  enabled?: boolean;
+}): Promise<PaginatedResponse<RiskRuleOut>> {
+  return http.get<PaginatedResponse<RiskRuleOut>>('/risk/rules', { params });
+}
+
+/**
+ * 获取单个风控规则
+ */
+export function getRiskRule(ruleId: number): Promise<RiskRuleOut> {
+  return http.get<RiskRuleOut>(`/risk/rules/${ruleId}`);
+}
+
+/**
+ * 创建风控规则
+ */
+export function createRiskRule(data: {
+  rule_name: string;
+  rule_type: string;
+  level: string;
+  params?: Record<string, any>;
+  enabled?: boolean;
+  description?: string;
+}): Promise<RiskRuleOut> {
+  return http.post<RiskRuleOut>('/risk/rules', data);
+}
+
+/**
+ * 更新风控规则
+ */
+export function updateRiskRule(ruleId: number, data: Partial<{
+  rule_name: string;
+  rule_type: string;
+  level: string;
+  params?: Record<string, any>;
+  enabled?: boolean;
+  description?: string;
+}>): Promise<RiskRuleOut> {
+  return http.put<RiskRuleOut>(`/risk/rules/${ruleId}`, data);
+}
+
+/**
+ * 删除风控规则
+ */
+export function deleteRiskRule(ruleId: number): Promise<void> {
+  return http.delete<void>(`/risk/rules/${ruleId}`);
+}
+
+/**
+ * 启用/禁用风控规则
+ */
+export function toggleRiskRule(ruleId: number, enabled: boolean): Promise<RiskRuleOut> {
+  return http.post<RiskRuleOut>(`/risk/rules/${ruleId}/toggle`, {}, { params: { enabled } });
+}
+
+/**
+ * 获取风控事件列表
+ */
+export function getRiskEvents(params?: {
+  page?: number;
+  page_size?: number;
+  level?: string;
+  event_type?: string;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<PaginatedResponse<RiskEventOut>> {
+  return http.get<PaginatedResponse<RiskEventOut>>('/risk/events', { params });
+}
+
+/**
+ * 获取单个风控事件
+ */
+export function getRiskEvent(eventId: number): Promise<RiskEventOut> {
+  return http.get<RiskEventOut>(`/risk/events/${eventId}`);
+}
+
+/**
+ * 执行风控检查
+ */
+export function checkRisk(data: {
+  action: string;
+  code?: string;
+  shares?: number;
+  price?: number;
+}): Promise<RiskCheckResult> {
+  return http.post<RiskCheckResult>('/risk/check', data);
+}
+
+/**
+ * 获取风控统计
+ */
+export function getRiskStats(): Promise<RiskStatsOut> {
+  return http.get<RiskStatsOut>('/risk/stats');
+}
+
 // ============= ML 模型相关 =============
 
 /**

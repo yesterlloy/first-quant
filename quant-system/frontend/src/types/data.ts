@@ -302,3 +302,51 @@ export interface MLTimingSignal {
   probability?: number;
   prediction?: 'buy' | 'sell' | 'hold';
 }
+
+// ============ 风控相关类型 ============
+
+/** 风控规则 */
+export interface RiskRuleOut {
+  id: number;
+  rule_name: string;
+  rule_type: string;
+  level: string;
+  params?: Record<string, any>;
+  enabled: boolean;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 风控事件 */
+export interface RiskEventOut {
+  id: number;
+  timestamp: string;
+  level: string;
+  type?: string;
+  code?: string;
+  message?: string;
+  details?: Record<string, any>;
+  created_at?: string;
+}
+
+/** 风控检查结果 */
+export interface RiskCheckResult {
+  passed: boolean;
+  level: string;
+  triggered_rules: string[];
+  warnings: string[];
+  errors: string[];
+  details: Record<string, any>;
+}
+
+/** 风控统计 */
+export interface RiskStatsOut {
+  total_events: number;
+  today_events: number;
+  warning_count: number;
+  block_count: number;
+  total_rules: number;
+  enabled_rules: number;
+  top_triggers: Array<{ type: string; count: number }>;
+}
