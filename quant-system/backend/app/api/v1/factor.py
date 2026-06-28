@@ -23,7 +23,9 @@ from app.services import factor_service
 router = APIRouter()
 
 
-@router.get("", response_model=ApiResponse[FactorListResponse])
+# ========== 固定路径路由 ==========
+
+@router.get("/list", response_model=ApiResponse[FactorListResponse])
 def list_factors(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=500),
@@ -49,11 +51,57 @@ def list_factors(
     )
 
 
-@router.get("/{name}", response_model=ApiResponse[FactorOut])
-def get_factor(name: str, db: Session = Depends(get_db)):
-    """查询单个因子详情."""
-    factor = factor_service.get_factor(db, name)
-    return ApiResponse.success(data=FactorOut.model_validate(factor))
+@router.get("/values", response_model=ApiResponse[PaginatedResponse[FactorValueOut]])
+def get_factor_values(
+    factor_name: str = Query(..., description="因子名称"),
+    date: Optional[date] = Query(None, description="指定日期"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """查询因子值（分页）."""
+    from app.schemas.factor import FactorValueQuery
+
+    query = FactorValueQuery(
+        factor_name=factor_name,
+        on_date=date,
+        limit=page_size,
+    )
+    items = factor_service.get_factor_values(db, query)
+    params = PaginationParams(page=page, page_size=page_size)
+    return ApiResponse.success(
+        data=PaginatedResponse[FactorValueOut].create(
+            items=[FactorValueOut.model_validate(v) for v in items],
+            total=len(items),
+            params=params,
+        )
+    )
+
+
+@router.get("/ic-analysis", response_model=ApiResponse[FactorEvaluateResult])
+def get_factor_ic_analysis(
+    factor_name: str = Query(..., description="因子名称"),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """IC 分析（因子有效性评估）."""
+    result = factor_service.evaluate_factor(
+        db, factor_name, start_date=start_date, end_date=end_date
+    )
+    return ApiResponse.success(data=result)
+
+
+@router.get("/layer-backtest", response_model=ApiResponse[list])
+def get_factor_layer_backtest(
+    factor_name: str = Query(..., description="因子名称"),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """分层回测（暂返回空列表）."""
+    # TODO: 实现分层回测服务
+    return ApiResponse.success(data=[])
 
 
 @router.post("", response_model=ApiResponse[FactorOut], status_code=status.HTTP_201_CREATED)
@@ -65,6 +113,15 @@ def create_factor(
     """创建因子（需登录）."""
     factor = factor_service.create_factor(db, factor_in)
     return ApiResponse.success(data=FactorOut.model_validate(factor), message="创建成功")
+
+
+# ========== 参数化路径路由 (放在固定路径之后) ==========
+
+@router.get("/{name}", response_model=ApiResponse[FactorOut])
+def get_factor(name: str, db: Session = Depends(get_db)):
+    """查询单个因子详情."""
+    factor = factor_service.get_factor(db, name)
+    return ApiResponse.success(data=FactorOut.model_validate(factor))
 
 
 @router.put("/{name}", response_model=ApiResponse[FactorOut])
@@ -91,7 +148,7 @@ def delete_factor(
 
 
 @router.get("/{name}/values", response_model=ApiResponse[list[FactorValueOut]])
-def get_factor_values(
+def get_factor_values_by_name(
     name: str,
     date: Optional[date] = Query(None, description="指定日期"),
     code: Optional[str] = Query(None, description="指定股票"),
@@ -100,7 +157,7 @@ def get_factor_values(
     limit: int = Query(500, ge=1, le=10000),
     db: Session = Depends(get_db),
 ):
-    """查询因子值."""
+    """按因子名称查询因子值."""
     from app.schemas.factor import FactorValueQuery
 
     query = FactorValueQuery(
