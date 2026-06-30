@@ -350,3 +350,51 @@ export interface RiskStatsOut {
   enabled_rules: number;
   top_triggers: Array<{ type: string; count: number }>;
 }
+
+// ============ 调度器相关类型 ============
+
+/** 调度任务 */
+export interface SchedulerTaskOut {
+  id: number;
+  task_name: string;
+  description?: string;
+  cron: string;
+  enabled: boolean;
+  timeout: number;
+  retry: boolean;
+  retry_max: number;
+  last_run_at?: string;
+  next_run_at?: string;
+  last_status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 调度日志 */
+export interface SchedulerLogOut {
+  id: number;
+  task_name: string;
+  status: string;
+  start_time: string;
+  end_time?: string;
+  duration_seconds?: number;
+  retry_count: number;
+  error_message?: string;
+  created_at?: string;
+}
+
+/** 调度器统计 */
+export interface SchedulerStatsOut {
+  total_tasks: number;
+  enabled_tasks: number;
+  today_runs: number;
+  success_count: number;
+  failed_count: number;
+  avg_duration: number;
+  running_tasks: string[];
+  recently_failed: Array<{
+    task_name: string;
+    error_message?: string;
+    failed_at?: string;
+  }>;
+}

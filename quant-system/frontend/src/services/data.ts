@@ -17,6 +17,9 @@ import type {
   MLTrainTask,
   MLFactorImportance,
   MLTimingSignal,
+  SchedulerTaskOut,
+  SchedulerLogOut,
+  SchedulerStatsOut,
 } from '../types/data';
 
 /**
@@ -438,4 +441,115 @@ export function getMLSignals(params?: {
   model_name?: string;
 }): Promise<PaginatedResponse<MLTimingSignal>> {
   return http.get<PaginatedResponse<MLTimingSignal>>('/ml/signals', { params });
+}
+
+// ============= 调度器相关 =============
+
+/**
+ * 获取调度器统计
+ */
+export function getSchedulerStats(): Promise<SchedulerStatsOut> {
+  return http.get<SchedulerStatsOut>('/scheduler/stats');
+}
+
+/**
+ * 获取任务列表
+ */
+export function getSchedulerTasks(params?: {
+  enabled?: boolean;
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedResponse<SchedulerTaskOut>> {
+  return http.get<PaginatedResponse<SchedulerTaskOut>>('/scheduler/tasks', { params });
+}
+
+/**
+ * 获取任务详情
+ */
+export function getSchedulerTask(taskId: number): Promise<SchedulerTaskOut> {
+  return http.get<SchedulerTaskOut>(`/scheduler/tasks/${taskId}`);
+}
+
+/**
+ * 创建任务
+ */
+export function createSchedulerTask(data: {
+  task_name: string;
+  description?: string;
+  cron: string;
+  enabled?: boolean;
+  timeout?: number;
+  retry?: boolean;
+  retry_max?: number;
+}): Promise<SchedulerTaskOut> {
+  return http.post<SchedulerTaskOut>('/scheduler/tasks', data);
+}
+
+/**
+ * 更新任务
+ */
+export function updateSchedulerTask(taskId: number, data: Partial<{
+  task_name: string;
+  description?: string;
+  cron: string;
+  enabled?: boolean;
+  timeout?: number;
+  retry?: boolean;
+  retry_max?: number;
+}>): Promise<SchedulerTaskOut> {
+  return http.put<SchedulerTaskOut>(`/scheduler/tasks/${taskId}`, data);
+}
+
+/**
+ * 删除任务
+ */
+export function deleteSchedulerTask(taskId: number): Promise<void> {
+  return http.delete<void>(`/scheduler/tasks/${taskId}`);
+}
+
+/**
+ * 启用/禁用任务
+ */
+export function toggleSchedulerTask(taskId: number, enabled: boolean): Promise<SchedulerTaskOut> {
+  return http.post<SchedulerTaskOut>(`/scheduler/tasks/${taskId}/toggle`, {}, { params: { enabled } });
+}
+
+/**
+ * 手动触发任务
+ */
+export function triggerSchedulerTask(taskName: string): Promise<{
+  task_name: string;
+  triggered: boolean;
+  log_id: number;
+  message: string;
+}> {
+  return http.post(`/scheduler/tasks/${taskName}/trigger`);
+}
+
+/**
+ * 初始化默认任务
+ */
+export function initDefaultTasks(): Promise<{ initialized: boolean }> {
+  return http.post('/scheduler/init');
+}
+
+/**
+ * 获取执行日志列表
+ */
+export function getSchedulerLogs(params?: {
+  task_name?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedResponse<SchedulerLogOut>> {
+  return http.get<PaginatedResponse<SchedulerLogOut>>('/scheduler/logs', { params });
+}
+
+/**
+ * 获取日志详情
+ */
+export function getSchedulerLog(logId: number): Promise<SchedulerLogOut> {
+  return http.get<SchedulerLogOut>(`/scheduler/logs/${logId}`);
 }

@@ -8,6 +8,7 @@ import StrategyBacktest from './pages/backtest';
 import MLModels from './pages/ml';
 import TradingDashboard from './pages/trading';
 import RiskCenter from './pages/risk';
+import SchedulerCenter from './pages/scheduler';
 import { useUserStore } from './stores/useUserStore';
 
 /**
@@ -57,7 +58,7 @@ export default function App() {
         <Route path="ml" element={<MLModels />} />
         <Route path="trading" element={<TradingDashboard />} />
         <Route path="risk" element={<RiskCenter />} />
-        <Route path="scheduler" element={<ComingSoon title="任务调度" />} />
+        <Route path="scheduler" element={<SchedulerCenter />} />
       </Route>
 
       {/* 兜底：未知路径回到首页 */}
