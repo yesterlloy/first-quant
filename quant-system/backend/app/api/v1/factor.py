@@ -42,9 +42,18 @@ def list_factors(
         page=page, page_size=page_size, category=category, enabled=enabled, keyword=keyword
     )
     items, total = factor_service.list_factors(db, fp)
+
+    # 填充前端需要的字段
+    factor_items = []
+    for f in items:
+        out = FactorOut.model_validate(f)
+        out.display_name = out.description or out.name  # 使用描述作为显示名
+        out.direction = 1  # 默认正向因子
+        factor_items.append(out)
+
     return ApiResponse.success(
         data=PaginatedResponse[FactorOut].create(
-            items=[FactorOut.model_validate(f) for f in items],
+            items=factor_items,
             total=total,
             params=params,
         )
@@ -124,7 +133,10 @@ def create_factor(
 def get_factor(name: str, db: Session = Depends(get_db)):
     """查询单个因子详情."""
     factor = factor_service.get_factor(db, name)
-    return ApiResponse.success(data=FactorOut.model_validate(factor))
+    out = FactorOut.model_validate(factor)
+    out.display_name = out.description or out.name
+    out.direction = 1
+    return ApiResponse.success(data=out)
 
 
 @router.put("/{name}", response_model=ApiResponse[FactorOut])

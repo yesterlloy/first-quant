@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     BACKTEST_SLIPPAGE: float = 0.0005
 
     # ---------- 因子默认参数（对应 config/settings.yaml::factor） ----------
-    FACTOR_FORWARD_PERIOD: int = 20
+    FACTOR_FORWARD_PERIOD: int = 5
     FACTOR_N_LAYERS: int = 5
     FACTOR_ICIR_THRESHOLD: float = 0.5
     FACTOR_MAX_DECAY_PERIOD: int = 120
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     # ---------- ML 默认参数（对应 config/settings.yaml::ml） ----------
     ML_TRAIN_MONTHS: int = 24
     ML_VAL_MONTHS: int = 6
-    ML_FORWARD_PERIOD: int = 20
+    ML_FORWARD_PERIOD: int = 5
     ML_N_MAD: float = 3.0
     ML_NUM_BOOST_ROUND: int = 500
     ML_EARLY_STOPPING: int = 50

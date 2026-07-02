@@ -41,6 +41,8 @@ class FactorOut(FactorBase):
 
     id: int
     enabled: bool
+    display_name: Optional[str] = Field(None, description="显示名称")
+    direction: int = Field(1, description="因子方向：1=正向，-1=负向")
 
 
 class FactorListParams(PaginationParams):
@@ -81,8 +83,9 @@ class FactorEvaluateResult(BaseModel):
     factor_name: str
     ic_mean: Optional[float] = Field(None, description="IC 均值")
     ic_std: Optional[float] = Field(None, description="IC 标准差")
-    icir: Optional[float] = Field(None, description="ICIR")
-    ic_win_rate: Optional[float] = Field(None, description="IC 胜率")
+    ir: Optional[float] = Field(None, description="ICIR")
+    win_rate: Optional[float] = Field(None, description="IC 胜率")
+    ic_series: Optional[List[dict]] = Field(None, description="IC 时间序列")
     layer_returns: Optional[List[float]] = Field(None, description="分层收益")
     effective: Optional[bool] = Field(None, description="是否有效")
 

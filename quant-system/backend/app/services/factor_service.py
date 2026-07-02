@@ -183,30 +183,33 @@ def evaluate_factor(
         raise BusinessException(code=5004, message="因子值与行情数据无交集")
 
     # 按日期截面计算 Spearman IC
-    ic_series: list[float] = []
+    ic_series_data: list[dict] = []
     for date_val, group in merged.groupby("date"):
         if len(group) < 5:  # 截面样本过少则跳过
             continue
         ic = group["value"].corr(group["forward_return"], method="spearman")
         if pd.notna(ic):
-            ic_series.append(float(ic))
+            # 格式化日期为字符串
+            date_str = date_val.strftime("%Y-%m-%d") if hasattr(date_val, "strftime") else str(date_val).split("T")[0]
+            ic_series_data.append({"date": date_str, "ic": float(ic)})
 
-    if not ic_series:
+    if not ic_series_data:
         raise BusinessException(code=5005, message="IC 计算失败，样本不足")
 
-    ic_arr = np.array(ic_series)
+    ic_arr = np.array([item["ic"] for item in ic_series_data])
     ic_mean = float(np.mean(ic_arr))
     ic_std = float(np.std(ic_arr, ddof=1)) if len(ic_arr) > 1 else 0.0
-    icir = float(ic_mean / ic_std) if ic_std > 0 else 0.0
-    ic_win_rate = float((ic_arr > 0).mean())
+    ir = float(ic_mean / ic_std) if ic_std > 0 else 0.0
+    win_rate = float((ic_arr > 0).mean())
 
     return FactorEvaluateResult(
         factor_name=name,
         ic_mean=ic_mean,
         ic_std=ic_std,
-        icir=icir,
-        ic_win_rate=ic_win_rate,
-        effective=abs(icir) >= settings.FACTOR_ICIR_THRESHOLD,
+        ir=ir,
+        win_rate=win_rate,
+        ic_series=ic_series_data,
+        effective=abs(ir) >= settings.FACTOR_ICIR_THRESHOLD,
     )
 
 
